@@ -1,8 +1,8 @@
-## World domination game
+# World domination game
 
 This is a turn based world domination game enhanceed with some AI.
 
-# TODO:
+## TODO:
 
 - Datastructure for countires
   - Neighbour countries
