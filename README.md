@@ -25,3 +25,4 @@ This is a turn based world domination game enhanceed with some AI.
   - Diplomatic alliance
   - Natural disasters and other events
   - Updating coutnry data from events
+  - init the countries data in the beginning witt speudo random stuff with help of ao
