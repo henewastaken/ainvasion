@@ -1,9 +1,9 @@
 # World domination game
 
-This is a turn based world domination game enhanceed with some AI.
+This is a turn based world domination game enhanceed with some AI. This project is still in very early stages.
 
 ## TODO:
-
+- Ai api calls
 - Datastructure for countires
   - Neighbour countries
   - Army size (If 0, cannot be used untill uses turn to recruite more citizens)
