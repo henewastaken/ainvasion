@@ -1,6 +1,6 @@
 import { randomUUID } from "crypto";
 import { Country, GameState, Player } from "../game/models";
-import { MAP_DATA, START_COUNTRIES } from "../game/mapData";
+import { mapData, startCountries } from "../game/mapData";
 
 export const sessions = new Map<string, GameState>();
 
@@ -12,41 +12,41 @@ export function createSession(creatorName: string): {
   const gameId = randomUUID();
   const playerId = randomUUID();
 
-  const startCountry = START_COUNTRIES[0];
+  const startCountry = startCountries[0];
 
   const countries: Record<string, Country> = Object.fromEntries(
-    Object.entries(MAP_DATA).map(([name, data]) => [
+    Object.entries(mapData).map(([name, data]) => [
       name,
-      { name, owner_id: null, ...data },
+      { name, ownerId: null, ...data },
     ]),
   );
-  countries[startCountry].owner_id = playerId;
+  countries[startCountry].ownerId = playerId;
 
   const player: Player = {
-    player_id: playerId,
+    playerId: playerId,
     name: creatorName,
     empire: [startCountry],
     resources: [],
-    army_strength: 100,
-    has_acted_this_turn: false,
+    armyStrength: 100,
+    hasActedThisTurn: false,
   };
 
   const state: GameState = {
-    game_id: gameId,
-    creator_id: playerId,
+    gameId: gameId,
+    creatorId: playerId,
     players: [player],
     countries,
-    current_turn_player_id: playerId,
-    turn_number: 1,
-    story_log: [],
+    currentTurnPlayerId: playerId,
+    turnNumber: 1,
+    storyLog: [],
     status: "pending",
-    winner_id: null,
+    winnerId: null,
   };
 
   sessions.set(gameId, state);
   return { gameId, playerId };
 }
-// Add a player to a pending session. Returns new player_id, or null if the
+// Add a player to a pending session. Returns new playerId, or null if the
 // game is full / not in pending state.
 export function addPlayer(gameId: string, playerName: string): string | null {
   const state = sessions.get(gameId) as GameState | undefined;
@@ -54,21 +54,21 @@ export function addPlayer(gameId: string, playerName: string): string | null {
     return null; // game not found or not pending
   }
 
-  if (state.players.length >= START_COUNTRIES.length) {
+  if (state.players.length >= startCountries.length) {
     return null; // lobby full
   }
 
   const playerId = randomUUID();
-  const startCountry = START_COUNTRIES[state.players.length];
-  state.countries[startCountry].owner_id = playerId;
+  const startCountry = startCountries[state.players.length];
+  state.countries[startCountry].ownerId = playerId;
 
   const player: Player = {
-    player_id: playerId,
+    playerId: playerId,
     name: playerName,
     empire: [startCountry],
     resources: [],
-    army_strength: 0,
-    has_acted_this_turn: false,
+    armyStrength: 0,
+    hasActedThisTurn: false,
   };
   state.players.push(player);
   return playerId;

@@ -15,8 +15,8 @@ export const generateResourcesPrompt = (countries: string[]) => {
     Respond ONLY in valid JSON and nothing else. Not single word, only JSON of this format:
     {
     "CountryName": {
-        "favorite_resource": "<resource name>",
-        "hated_resource": "<resource name>"
+        "favoriteResource": "<resource name>",
+        "hatedResource": "<resource name>"
     },
     ...
     }
@@ -24,13 +24,13 @@ export const generateResourcesPrompt = (countries: string[]) => {
 };
 
 export const resolveAttackPrompt = (
-  attacker_name: string,
-  attacker_army: number,
-  target_country: string,
-  target_army: number,
-  target_morale: number,
-  items_used: string[],
-  story_context: string,
+  attackerName: string,
+  attackerArmy: number,
+  targetCountry: string,
+  targetArmy: number,
+  targetMorale: number,
+  itemsUsed: string[],
+  storyContext: string,
 ) => {
   return `
     You are narrating a turn-based world domination game set in Europe.
@@ -46,27 +46,27 @@ export const resolveAttackPrompt = (
     The outcome can be either a success or failure for the attacker.
     The outcome can be as random or weird as you like, the following factors are only guidelines, not rules:
 
-    Attacker: ${attacker_name}
-    Attacker army strength: ${attacker_army}
-    Target country: ${target_country}
-    Target army strength: ${target_army}
-    Target morale: ${target_morale}
-    Items used by attacker: ${items_used}
-    Recent history: ${story_context}
+    Attacker: ${attackerName}
+    Attacker army strength: ${attackerArmy}
+    Target country: ${targetCountry}
+    Target army strength: ${targetArmy}
+    Target morale: ${targetMorale}
+    Items used by attacker: ${itemsUsed}
+    Recent history: ${storyContext}
 
     Guidelines for determining success:
     - Higher attacker army strength and lower target morale favour the attacker.
     - Items used by the attacker can tip the balance. Take into account the effects of each item used.
-    - On success, new_defender_army_strength must be 0.
+    - On success, newDefenderArmyStrength must be 0.
 
     Respond ONLY in valid JSON, NOT a single word, and nothing else. The JSON format is:
     {
       "success": true or false,
-      "new_attacker_army_strength": <attacker remaining strength as integer>,
-      "new_defender_army_strength": <defender remaining strength as integer, 0 on success>,
+      "newAttackerArmyStrength": <attacker remaining strength as integer>,
+      "newDefenderArmyStrength": <defender remaining strength as integer, 0 on success>,
       "story": "<short narrative of the event>",
       "items": [
-        {"item_name": "<name>", "item_effect": "<short mechanical effect>", "quantity": 1}
+        {"itemName": "<name>", "itemEffect": "<short mechanical effect>", "quantity": 1}
       ]
     }
 
@@ -75,13 +75,13 @@ export const resolveAttackPrompt = (
 };
 
 export const resolveDiplomacyPrompt = (
-  player_name: string,
-  target_country: string,
+  playerName: string,
+  targetCountry: string,
 ) => {
   return `
     You are assisting in a world domination game. A player is attempting to form a diplomatic alliance with another country.
-    Player: ${player_name}
-    Target country: ${target_country}
+    Player: ${playerName}
+    Target country: ${targetCountry}
     Provide a short narrative of the event, and if any items were found in the target country or during the battle, include them in the response.
     The story can be as random or weird as you like.
     You must respond ONLY in valid JSON and nothing else. Not single word, only JSON
@@ -91,30 +91,30 @@ export const resolveDiplomacyPrompt = (
     - The target country's current morale and army strength may influence their decision.
     - Player can try to affect the target country's decision by using resources, but the outcome is ultimately up to you.
     - If resources are used, they are consumed only if the outcome is fail.
-    - Each country has favourite_resource and hated_resource, which may influence their decision. If the player uses the target country's favourite_resource, it increases the chance of success. If the player uses the target country's hated_resource, it decreases the chance of success. But in the end you decide the outcome.
+    - Each country has favouriteResource and hatedResource, which may influence their decision. If the player uses the target country's favouriteResource, it increases the chance of success. If the player uses the target country's hatedResource, it decreases the chance of success. But in the end you decide the outcome.
 
     Respond ONLY in valid JSON, NOT a single word, and nothing else. The JSON format is:
     {
       "success": true or false,
       "story": "<short narrative of the event>",
       "items": [
-        {"item_name": "<name>", "item_effect": "<short mechanical effect>", "quantity": 1}
+        {"itemName": "<name>", "itemEffect": "<short mechanical effect>", "quantity": 1}
       ]
     }
   `.trim();
 };
 
 export const resolveResearchPrompt = (
-  player_name: string,
+  playerName: string,
   item: string,
-  resources_used: string[],
+  resourcesUsed: string[],
 ) => {
   return `
     You are assisting in a world domination game. A player is researching a new item or technology.
 
-    Player: ${player_name}
+    Player: ${playerName}
     Research target: ${item}
-    Resources used to aid research: ${resources_used.join(", ")}
+    Resources used to aid research: ${resourcesUsed.join(", ")}
 
     Describe what was researched and give it effects.
     You determine the outcome of the research.
@@ -130,8 +130,8 @@ export const resolveResearchPrompt = (
     {
       "success": true or false,
       "story": "<short narrative of the research>",
-      "researched_item":
-        {"item_name": "<name>", "item_effect": "<short mechanical effect>", "quantity": 1}
+      "researchedItem":
+        {"itemName": "<name>", "itemEffect": "<short mechanical effect>", "quantity": 1}
       , or empty object {} if research failed,
     }
   `.trim();

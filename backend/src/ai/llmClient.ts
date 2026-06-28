@@ -8,17 +8,17 @@ import {
 
 // TODO: import from ../game/models once models.ts is filled in
 interface Resource {
-  item_name: string;
-  item_effect: string;
+  itemName: string;
+  itemEffect: string;
   quantity: number;
 }
 
 export interface ActionResponse {
   success: boolean;
-  new_attacker_army: number;
-  new_enemy_army: number;
+  newAttackerArmy: number;
+  newEnemyArmy: number;
   story: string;
-  found_items: Resource[];
+  foundItems: Resource[];
 }
 
 export interface DiplomacyResponse {
@@ -30,7 +30,7 @@ export interface DiplomacyResponse {
 export interface ResearchResponse {
   success: boolean;
   story: string;
-  researched_item: Resource | null;
+  researchedItem: Resource | null;
 }
 
 // ---------------------------------------------------------------------------
@@ -68,7 +68,7 @@ function parseJson<T>(raw: string): T {
 export async function generateCountryResources(
   countries: Record<string, unknown>,
 ): Promise<
-  Record<string, { favorite_resource: string; hated_resource: string }>
+  Record<string, { favoriteResource: string; hatedResource: string }>
 > {
   console.log("generating resources for", Object.keys(countries), "...");
   const raw = await llmRequest(
@@ -115,12 +115,10 @@ export async function resolveAttack(
   const outcome = parseJson<Record<string, unknown>>(raw);
   return {
     success: Boolean(outcome.success),
-    new_attacker_army: Number(
-      outcome.new_attacker_army_strength ?? attackerArmy,
-    ),
-    new_enemy_army: Number(outcome.new_defender_army_strength ?? targetArmy),
+    newAttackerArmy: Number(outcome.newAttackerArmy ?? attackerArmy),
+    newEnemyArmy: Number(outcome.newEnemyArmy ?? targetArmy),
     story: String(outcome.story ?? ""),
-    found_items: (outcome.items as Resource[]) ?? [],
+    foundItems: (outcome.foundItems as Resource[]) ?? [],
   };
 }
 
@@ -174,14 +172,14 @@ export async function resolveResearch(
   );
   console.log("llm generated research outcome", raw);
   const outcome = parseJson<Record<string, unknown>>(raw);
-  const researchedItem = outcome.researched_item as
+  const researchedItem = outcome.researchedItem as
     | Resource
     | Record<string, never>
     | undefined;
   return {
     success: Boolean(outcome.success),
     story: String(outcome.story ?? ""),
-    researched_item:
+    researchedItem:
       researchedItem && Object.keys(researchedItem).length > 0
         ? (researchedItem as Resource)
         : null,
