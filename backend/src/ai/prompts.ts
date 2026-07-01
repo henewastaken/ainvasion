@@ -1,5 +1,7 @@
 // Prompt templates used when calling the LLM.
 
+import { Country, Resource } from "../game/models";
+
 export const generateResourcesPrompt = (countries: string[]) => {
   return `
     You are generating resources for a world domination strategy game set in Europe.
@@ -24,17 +26,16 @@ export const generateResourcesPrompt = (countries: string[]) => {
 };
 
 export const resolveAttackPrompt = (
-  attackerName: string,
-  attackerArmy: number,
-  targetCountry: string,
-  targetArmy: number,
-  targetMorale: number,
-  itemsUsed: string[],
+  attackerEmpire: string[],
+  attackerArmyStrength: number,
+  attackerMorale: number,
+  targetCountry: Country,
+  itemsUsed: Resource[],
   storyContext: string,
 ) => {
   return `
     You are narrating a turn-based world domination game set in Europe.
-    A player is attacking a country. 
+    A player is attacking a country.
     Provide a short narrative of the event, and if any items were found in the target country or during the battle, include them in the response.
     The story can be as random or weird as you like.
     Every response doesn't need to include items, but if you do, include at most two items.
@@ -46,12 +47,13 @@ export const resolveAttackPrompt = (
     The outcome can be either a success or failure for the attacker.
     The outcome can be as random or weird as you like, the following factors are only guidelines, not rules:
 
-    Attacker: ${attackerName}
-    Attacker army strength: ${attackerArmy}
-    Target country: ${targetCountry}
-    Target army strength: ${targetArmy}
-    Target morale: ${targetMorale}
-    Items used by attacker: ${itemsUsed}
+    Attacker empire (all countries they control): ${attackerEmpire.join(", ")}
+    Attacker army strength: ${attackerArmyStrength}
+    Attacker morale: ${attackerMorale}
+    Target country: ${targetCountry.name}
+    Target army strength: ${targetCountry.armyStrength}
+    Target morale: ${targetCountry.morale}
+    Items used by attacker: ${JSON.stringify(itemsUsed)}
     Recent history: ${storyContext}
 
     Guidelines for determining success:
@@ -75,13 +77,19 @@ export const resolveAttackPrompt = (
 };
 
 export const resolveDiplomacyPrompt = (
-  playerName: string,
-  targetCountry: string,
+  playerEmpireContrieNames: string[],
+  targetCountry: Country,
+  resourcesUsed: Resource[],
 ) => {
   return `
     You are assisting in a world domination game. A player is attempting to form a diplomatic alliance with another country.
-    Player: ${playerName}
-    Target country: ${targetCountry}
+    Player's countries: ${playerEmpireContrieNames.join(", ")}
+    Target country: ${targetCountry.name}
+    Resources used to influence diplomacy: ${JSON.stringify(resourcesUsed)}
+    Target country loved resource: ${targetCountry.favoriteResource} 
+    Target country hated resource: ${targetCountry.hatedResource} 
+    The player can give items and resources to the target country to try to influence their decision, but the outcome is ultimately up to you. 
+    But if the player is trying to give a resource to the target country that the target country hates, it will decrease the chance of success. If the player is trying to give a resource that the target country loves, it will increase the chance of success.
     Provide a short narrative of the event, and if any items were found in the target country or during the battle, include them in the response.
     The story can be as random or weird as you like.
     You must respond ONLY in valid JSON and nothing else. Not single word, only JSON
@@ -107,14 +115,14 @@ export const resolveDiplomacyPrompt = (
 export const resolveResearchPrompt = (
   playerName: string,
   item: string,
-  resourcesUsed: string[],
+  resourcesUsed: Resource[],
 ) => {
   return `
     You are assisting in a world domination game. A player is researching a new item or technology.
 
     Player: ${playerName}
     Research target: ${item}
-    Resources used to aid research: ${resourcesUsed.join(", ")}
+    Resources used to aid research: ${JSON.stringify(resourcesUsed)}
 
     Describe what was researched and give it effects.
     You determine the outcome of the research.

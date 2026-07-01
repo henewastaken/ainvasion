@@ -5,33 +5,14 @@ import {
   resolveDiplomacyPrompt,
   resolveResearchPrompt,
 } from "./prompts";
-
-// TODO: import from ../game/models once models.ts is filled in
-interface Resource {
-  itemName: string;
-  itemEffect: string;
-  quantity: number;
-}
-
-export interface ActionResponse {
-  success: boolean;
-  newAttackerArmy: number;
-  newEnemyArmy: number;
-  story: string;
-  foundItems: Resource[];
-}
-
-export interface DiplomacyResponse {
-  success: boolean;
-  story: string;
-  items: Resource[];
-}
-
-export interface ResearchResponse {
-  success: boolean;
-  story: string;
-  researchedItem: Resource | null;
-}
+import {
+  ActionResponse,
+  Country,
+  DiplomacyResponse,
+  Item,
+  ResearchResponse,
+  Resource,
+} from "../game/models";
 
 // ---------------------------------------------------------------------------
 // Shared helpers
@@ -84,29 +65,27 @@ export async function generateCountryResources(
 // ---------------------------------------------------------------------------
 
 export async function resolveAttack(
-  attackerName: string,
-  attackerArmy: number,
-  targetCountry: string,
-  targetArmy: number,
-  targetMorale: number,
-  itemsUsed: string[],
+  attackerEmpire: string[],
+  attackerArmyStrength: number,
+  attackerMorale: number,
+  targetCountry: Country,
+  itemsUsed: Resource[],
   storyContext: string,
 ): Promise<ActionResponse> {
   console.log(
-    "determining attack outcome for",
-    attackerName,
+    "determining attack outcome for empire",
+    attackerEmpire,
     "and",
-    targetCountry,
+    targetCountry.name,
     "...",
   );
   const raw = await llmRequest(
     "You are a world domination strategy game assistant. Determine outcome of an attack.",
     resolveAttackPrompt(
-      attackerName,
-      attackerArmy,
+      attackerEmpire,
+      attackerArmyStrength,
+      attackerMorale,
       targetCountry,
-      targetArmy,
-      targetMorale,
       itemsUsed,
       storyContext,
     ),
@@ -115,10 +94,10 @@ export async function resolveAttack(
   const outcome = parseJson<Record<string, unknown>>(raw);
   return {
     success: Boolean(outcome.success),
-    newAttackerArmy: Number(outcome.newAttackerArmy ?? attackerArmy),
-    newEnemyArmy: Number(outcome.newEnemyArmy ?? targetArmy),
+    playerArmyStrength: Number(outcome.newAttackerArmyStrength ?? attackerArmyStrength),
+    enemyArmyStrength: Number(outcome.newDefenderArmyStrength ?? targetCountry.armyStrength),
     story: String(outcome.story ?? ""),
-    foundItems: (outcome.foundItems as Resource[]) ?? [],
+    items: (outcome.foundItems as Resource[]) ?? [],
   };
 }
 
@@ -127,26 +106,32 @@ export async function resolveAttack(
 // ---------------------------------------------------------------------------
 
 export async function resolveDiplomacy(
-  playerName: string,
-  targetCountry: string,
+  playerEmpireContrieNames: string[],
+  targetCountry: Country,
+  resourcesUsed: Resource[],
 ): Promise<DiplomacyResponse> {
   console.log(
     "determining diplomatic alliance outcome for",
-    playerName,
+    playerEmpireContrieNames.join(", "),
     "and",
-    targetCountry,
+    targetCountry.name,
     "...",
   );
   const raw = await llmRequest(
     "You are a world domination strategy game assistant. Determine outcome of a diplomatic alliance.",
-    resolveDiplomacyPrompt(playerName, targetCountry),
+    resolveDiplomacyPrompt(
+      playerEmpireContrieNames,
+      targetCountry,
+      resourcesUsed,
+    ),
   );
   console.log("llm generated diplomatic alliance outcome", raw);
   const outcome = parseJson<Record<string, unknown>>(raw);
   return {
     success: Boolean(outcome.success),
     story: String(outcome.story ?? ""),
-    items: (outcome.items as Resource[]) ?? [],
+    itemsUsed: (outcome.items as Item[]) ?? [],
+    resourceUsed: (outcome.resourceUsed as Resource[]) ?? null,
   };
 }
 
@@ -157,7 +142,7 @@ export async function resolveDiplomacy(
 export async function resolveResearch(
   playerName: string,
   item: string,
-  resourcesUsed: string[],
+  resourcesUsed: Resource[],
 ): Promise<ResearchResponse> {
   console.log(
     "determining research outcome for",
@@ -179,6 +164,8 @@ export async function resolveResearch(
   return {
     success: Boolean(outcome.success),
     story: String(outcome.story ?? ""),
+    itemsUsed: (outcome.items as Item[]) ?? [],
+    resourceUsed: (outcome.resourceUsed as Resource[]) ?? null,
     researchedItem:
       researchedItem && Object.keys(researchedItem).length > 0
         ? (researchedItem as Resource)

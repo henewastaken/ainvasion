@@ -5,42 +5,45 @@ import {
   ItemUsed,
   GameState,
   DiplomacyResponse,
+  Player,
+  Country,
 } from "../game/models";
 
-// Return True if targetCountry is reachable from the player's empire and not already owned by them.
+// Returns all countries bordering the player's empire that they don't already own.
+export const getEmpireBorders = (state: GameState, player: Player): string[] => {
+  const owned = new Set(player.empire);
+  return [
+    ...new Set(
+      player.empire
+        .flatMap((name) => state.countries[name]?.adjacency ?? [])
+        .filter((name) => !owned.has(name)),
+    ),
+  ];
+};
+
+// Return true if targetCountry is reachable from the player's empire and not already owned by them.
 export const isAdjacent = (
   state: GameState,
   playerId: string,
   targetCountry: string,
 ): boolean => {
   const player = state.players.find((p) => p.playerId === playerId);
-  if (!player || !state.countries[targetCountry]) {
-    return false;
-  }
-
-  if (state.countries[targetCountry].ownerId === playerId) {
-    return false; // already owned
-  }
-
-  for (const ownedName of player.empire) {
-    const owned = state.countries[ownedName];
-    if (owned && owned.adjacency.includes(targetCountry)) {
-      return true;
-    }
-  }
-  return false;
+  if (!player) return false;
+  return getEmpireBorders(state, player).includes(targetCountry);
 };
 
 // Apply the resolved attack outcome to the game state.
-export const applyActionResponse = (
+export const applyActionResult = (
   state: GameState,
   actionResponse: ActionResponse,
   playerId: string,
   targetCountry: string,
   itemsUsed: ItemUsed[],
 ): GameState => {
-  const player = state.players.find((p) => p.playerId === playerId);
-  const target = state.countries[targetCountry];
+  const player: Player | undefined = state.players.find(
+    (p) => p.playerId === playerId,
+  );
+  const target: Country = state.countries[targetCountry];
   if (!player || !target) {
     return state;
   }
@@ -48,7 +51,7 @@ export const applyActionResponse = (
   const prevOwnerId = target.ownerId; // capture before any mutation
 
   // Update army strengths
-  player.armyStrength = actionResponse.newArmyStrength;
+  player.armyStrength = actionResponse.playerArmyStrength;
   target.armyStrength = actionResponse.enemyArmyStrength;
 
   if (actionResponse.success) {
@@ -59,36 +62,46 @@ export const applyActionResponse = (
     if (prevOwnerId && prevOwnerId !== playerId) {
       const prevOwner = state.players.find((p) => p.playerId === prevOwnerId);
       if (prevOwner) {
-        const index = prevOwner.empire.indexOf(targetCountry);
-        if (index !== -1) {
-          prevOwner.empire.splice(index, 1);
-        }
+        prevOwner.empire = prevOwner.empire.filter((c) => c !== targetCountry);
       }
     }
   }
 
   // Consume used items from player inventory
-  for (const used of itemsUsed) {
-    for (const r of player.resources) {
-      if (r.itemName === used.itemName && r.quantity > 0) {
-        r.quantity -= 1;
-        break;
-      }
-    }
-  }
-  player.resources = player.resources.filter((r) => r.quantity > 0);
+  const usageCounts = itemsUsed.reduce<Record<string, number>>(
+    (acc, used) => ({
+      ...acc,
+      [used.itemName]: (acc[used.itemName] ?? 0) + 1,
+    }),
+    {},
+  );
+  player.resources = player.resources
+    .map((r) => ({
+      ...r,
+      quantity: r.quantity - (usageCounts[r.resourceName] ?? 0),
+    }))
+    .filter((r) => r.quantity > 0);
 
-  // Add items found during the event
-  for (const found of actionResponse.items) {
-    const existing = player.resources.find(
-      (r) => r.itemName === found.itemName,
-    );
-    if (existing) {
-      existing.quantity += found.quantity;
-    } else {
-      player.resources.push({ ...found });
-    }
-  }
+  // Merge found items into the player's inventory.
+  player.resources = actionResponse.items.reduce(
+    (inventory, found) => {
+      // Check if the player already has this resource type
+      const alreadyOwned = inventory.some(
+        (r) => r.resourceName === found.resourceName,
+      );
+      if (alreadyOwned) {
+        // Resource exists: add the found quantity to the existing stack
+        return inventory.map((r) =>
+          r.resourceName === found.resourceName
+            ? { ...r, quantity: r.quantity + found.quantity }
+            : r,
+        );
+      }
+      // Resource is new: append it to the inventory
+      return [...inventory, { ...found }];
+    },
+    player.resources, // start from the current inventory, not an empty array
+  );
 
   state.storyLog.push(actionResponse.story);
   return state;
@@ -101,8 +114,10 @@ export const applyDiplomacyResult = (
   targetCountry: string,
   itemsUsed: ItemUsed[],
 ): GameState => {
-  const player = state.players.find((p) => p.playerId === playerId);
-  const target = state.countries[targetCountry];
+  const player: Player | undefined = state.players.find(
+    (p) => p.playerId === playerId,
+  );
+  const target: Country = state.countries[targetCountry];
   if (!player || !target) {
     return state;
   }
@@ -115,21 +130,23 @@ export const applyDiplomacyResult = (
     if (prevOwnerId && prevOwnerId !== playerId) {
       const prevOwner = state.players.find((p) => p.playerId === prevOwnerId);
       if (prevOwner) {
-        const index = prevOwner.empire.indexOf(targetCountry);
-        if (index !== -1) prevOwner.empire.splice(index, 1);
+        prevOwner.empire = prevOwner.empire.filter((c) => c !== targetCountry);
       }
     }
   } else {
-    // Resources consumed only on failure
-    for (const used of itemsUsed) {
-      for (const r of player.resources) {
-        if (r.itemName === used.itemName && r.quantity > 0) {
-          r.quantity -= 1;
-          break;
-        }
-      }
-    }
-    player.resources = player.resources.filter((r) => r.quantity > 0);
+    const usageCounts = itemsUsed.reduce<Record<string, number>>(
+      (acc, used) => ({
+        ...acc,
+        [used.itemName]: (acc[used.itemName] ?? 0) + 1,
+      }),
+      {},
+    );
+    player.resources = player.resources
+      .map((r) => ({
+        ...r,
+        quantity: r.quantity - (usageCounts[r.resourceName] ?? 0),
+      }))
+      .filter((r) => r.quantity > 0);
   }
 
   state.storyLog.push(diplomacyResponse.story);
@@ -143,30 +160,34 @@ export const applyResearchResult = (
   playerId: string,
   resourcesUsed: string[],
 ): GameState => {
-  const player = state.players.find((p) => p.playerId === playerId);
+  const player: Player | undefined = state.players.find(
+    (p) => p.playerId === playerId,
+  );
   if (!player) {
     return state;
   }
 
   // Consume used resources
-  for (const resourceName of resourcesUsed) {
-    for (const r of player.resources) {
-      if (r.itemName === resourceName && r.quantity > 0) {
-        r.quantity -= 1;
-        break;
-      }
-    }
-  }
-  player.resources = player.resources.filter((r) => r.quantity > 0);
+  const usageCounts = resourcesUsed.reduce<Record<string, number>>(
+    (acc, name) => ({ ...acc, [name]: (acc[name] ?? 0) + 1 }),
+    {},
+  );
+  player.resources = player.resources
+    .map((r) => ({
+      ...r,
+      quantity: r.quantity - (usageCounts[r.resourceName] ?? 0),
+    }))
+    .filter((r) => r.quantity > 0);
 
   // Add researched item
-  const newResource = {
-    itemName: researchResponse.researchedItem?.itemName,
-    itemEffect: researchResponse.researchedItem?.itemEffect,
-    quantity: researchResponse.researchedItem?.quantity,
+  const newResource: Resource = {
+    resourceName: researchResponse.researchedItem?.resourceName || "",
+    resourceEffect: researchResponse.researchedItem?.resourceEffect || "",
+    quantity: researchResponse.researchedItem?.quantity || 0,
   };
+
   const existing = player.resources.find(
-    (r) => r.itemName === newResource.itemName,
+    (r) => r.resourceName === newResource.resourceName,
   );
   if (existing) {
     existing.quantity += 1;
@@ -175,7 +196,7 @@ export const applyResearchResult = (
   }
 
   state.storyLog.push(
-    `${player.name} researched '${researchResponse.researchedItem?.itemName}' with effect '${researchResponse.researchedItem?.itemEffect}'`,
+    `${player.name} researched '${researchResponse.researchedItem?.resourceName}' with effect '${researchResponse.researchedItem?.resourceEffect}'`,
   );
   return state;
 };
@@ -183,12 +204,10 @@ export const applyResearchResult = (
 // Advance to the next active player; increment turnNumber after all players have gone.
 export const advanceTurn = (state: GameState): GameState => {
   // Reset acted flag for outgoing player
-  for (const p of state.players) {
-    if (p.playerId === state.currentTurnPlayerId) {
-      p.hasActedThisTurn = false;
-      break;
-    }
-  }
+  const current = state.players.find(
+    (p) => p.playerId === state.currentTurnPlayerId,
+  );
+  if (current) current.hasActedThisTurn = false;
 
   const activeIds = state.players
     .filter((p) => p.empire)

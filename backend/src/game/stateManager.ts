@@ -28,6 +28,7 @@ export function createSession(creatorName: string): {
     empire: [startCountry],
     resources: [],
     armyStrength: 100,
+    morale: 100,
     hasActedThisTurn: false,
   };
 
@@ -67,7 +68,8 @@ export function addPlayer(gameId: string, playerName: string): string | null {
     name: playerName,
     empire: [startCountry],
     resources: [],
-    armyStrength: 0,
+    armyStrength: 100,
+    morale: 100,
     hasActedThisTurn: false,
   };
   state.players.push(player);
