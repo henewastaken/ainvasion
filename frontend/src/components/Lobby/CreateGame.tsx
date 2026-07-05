@@ -19,10 +19,10 @@ export default function CreateGame({ onSession }: Props) {
         setLoading(true);
         setError(null);
         try {
-            const { game_id, player_id } = await createGame(name.trim());
-            const creds: SessionCredentials = { game_id, player_id, player_name: name.trim() };
+            const { gameId, playerId } = await createGame(name.trim());
+            const creds: SessionCredentials = { gameId, playerId, playerName: name.trim() };
             onSession(creds);
-            setGameId(game_id);
+            setGameId(gameId);
         } catch {
             setError("Failed to create game. Is the backend running?");
         } finally {

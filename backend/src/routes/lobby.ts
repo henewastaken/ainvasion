@@ -31,6 +31,7 @@ export const createGame = async (req: Request, res: Response) => {
 export const joinGame = async (req: Request, res: Response) => {
   const gameId = req.params.gameId;
   const body: JoinGameRequest = req.body;
+
   const playerId = addPlayer(gameId, body.playerName);
   if (!playerId) {
     res.status(400).json({
@@ -38,11 +39,14 @@ export const joinGame = async (req: Request, res: Response) => {
     });
     return;
   }
+
   res.json({ playerId: playerId });
 };
+
 export const startGame = async (req: Request, res: Response) => {
   const gameId = req.params.gameId;
   const body: StartGameRequest = req.body;
+
   const state = getSession(gameId);
   if (!state) {
     res.status(404).json({ error: "Game not found." });
@@ -61,6 +65,7 @@ export const startGame = async (req: Request, res: Response) => {
   const resources = await generateCountryResources(
     Object.fromEntries(Object.keys(state.countries).map((name) => [name, {}])),
   );
+
   Object.entries(resources).map(([countryName, res]) => {
     if (state.countries[countryName]) {
       state.countries[countryName].favoriteResource = res.favoriteResource;
@@ -73,6 +78,6 @@ export const startGame = async (req: Request, res: Response) => {
   res.json({ status: "started" });
 };
 
-lobbyRoutes.post("/games", createGame);
-lobbyRoutes.post("/games/:gameId/join", joinGame);
-lobbyRoutes.post("/games/:gameId/start", startGame);
+lobbyRoutes.post("/game/create", createGame);
+lobbyRoutes.post("/game/:gameId/join", joinGame);
+lobbyRoutes.post("/game/:gameId/start", startGame);

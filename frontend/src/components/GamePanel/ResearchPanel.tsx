@@ -1,5 +1,5 @@
 import { useState } from "react";
-import type { GameState, Resource } from "../../types/game";
+import type { GameState, ResearchResponse, Resource } from "../../types/game";
 import { performResearch } from "../../services/api";
 
 interface Props {
@@ -10,7 +10,7 @@ interface Props {
 }
 
 export default function ResearchPanel({ gameState, playerId, onClose, onResult }: Props) {
-    const me = gameState.players.find((p) => p.player_id === playerId)!;
+    const me = gameState.players.find((player) => player.playerId === playerId)!;
 
     const [item, setItem] = useState("");
     const [selectedResources, setSelectedResources] = useState<Set<string>>(new Set());
@@ -30,12 +30,12 @@ export default function ResearchPanel({ gameState, playerId, onClose, onResult }
         setLoading(true);
         setError(null);
         try {
-            const res = await performResearch(gameState.game_id, {
-                player_id: playerId,
+            const res: ResearchResponse = await performResearch(gameState.gameId, {
+                playerId: playerId,
                 item: item.trim(),
-                resources_used: Array.from(selectedResources),
+                resourcesUsed: Array.from(selectedResources),
             });
-            onResult(`Researched: ${res.researched_item} — ${res.effects}`);
+            onResult(`Researched: ${res.researchedItem} — ${res.researchedItem?.itemEffect}`);
             onClose();
         } catch (e: unknown) {
             const msg = e instanceof Error ? e.message : "Research failed.";
@@ -61,15 +61,15 @@ export default function ResearchPanel({ gameState, playerId, onClose, onResult }
             {me.resources.length > 0 && (
                 <div className="item-picker">
                     <p>Aid with resources (optional):</p>
-                    {me.resources.map((r: Resource) => (
-                        <label key={r.item_name} className="item-row">
+                    {me.resources.map((resource: Resource) => (
+                        <label key={resource.resourceName} className="item-row">
                             <input
                                 type="checkbox"
-                                checked={selectedResources.has(r.item_name)}
-                                onChange={() => toggleResource(r.item_name)}
+                                checked={selectedResources.has(resource.resourceName)}
+                                onChange={() => toggleResource(resource.resourceName)}
                             />
-                            &nbsp;<strong>{r.item_name}</strong>
-                            <span className="item-qty"> ×{r.quantity}</span>
+                            &nbsp;<strong>{resource.resourceName}</strong>
+                            <span className="item-qty"> ×{resource.quantity}</span>
                         </label>
                     ))}
                 </div>

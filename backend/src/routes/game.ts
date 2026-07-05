@@ -35,55 +35,64 @@ const validateState = (
     res.status(404).json({ error: "Game not found." });
     return false;
   }
+
   if (state.status !== "active") {
     res.status(400).json({ error: "Game is not active." });
     return false;
   }
+
   if (state.currentTurnPlayerId !== body.playerId) {
     res.status(403).json({ error: "It is not your turn." });
     return false;
   }
+
   return true;
 };
 
 export const getMap = async (req: Request, res: Response) => {
   res.json(startCountries);
 };
-gameRoutes.get("/map", getMap);
 
 export const getState = async (req: Request, res: Response) => {
   const gameId = req.params.gameId;
   const state = getSession(gameId);
+
   if (!state) {
     res.status(404).json({ error: "Game not found." });
     return;
   }
   res.json(state);
 };
-gameRoutes.get("/games/:gameId/state", getState);
 
 // Handle player action (attack or diplomacy)
 export const performAction = async (req: Request, res: Response) => {
   const gameId = req.params.gameId;
   const body: ActionRequest = req.body;
-
   const state = getSession(gameId);
+  console.log(body);
+
   if (!validateState(state, body, res)) {
     return;
   }
 
   const player: Player | undefined = state.players.find(
-    (p) => p.playerId === body.playerId,
+    (player) => player.playerId === body.playerId,
   );
+  console.log(state);
+
+  console.log(player);
+
   // Validate the action request
   if (!player) {
     res.status(404).json({ error: "Player not found." });
     return;
   }
+
   if (player.hasActedThisTurn) {
     res.status(400).json({ error: "You have already acted this turn." });
     return;
   }
+
   if (!isAdjacent(state, body.playerId, body.target)) {
     res.status(400).json({
       error: `'${body.target}' is not adjacent to your empire.`,
@@ -101,6 +110,7 @@ export const performAction = async (req: Request, res: Response) => {
         : null,
     )
     .filter(Boolean);
+
   if (missingItems.length > 0) {
     res.status(400).json({
       error: `Item not in inventory: ${missingItems[0]}`,
@@ -127,7 +137,6 @@ export const performAction = async (req: Request, res: Response) => {
     // TODO: resoleDiplomacy takes a Country as parameter. Now Player has no Country
     // Should whole Player schema be redesign, or should all data come from body?
     // Also should Player have country that is one big country where all new countries gets merged into
-
     response = await resolveDiplomacy(player.empire, target, mappedItems);
     newState = applyDiplomacyResult(
       state,
@@ -136,6 +145,7 @@ export const performAction = async (req: Request, res: Response) => {
       body.target,
       body.itemsUsed,
     );
+    // Resolve Attack
   } else {
     response = await resolveAttack(
       player.empire,
@@ -166,8 +176,6 @@ export const performAction = async (req: Request, res: Response) => {
   res.json(response);
 };
 
-gameRoutes.post("/games/:gameId/action", performAction);
-
 export const performResearch = async (req: Request, res: Response) => {
   const gameId = req.params.gameId;
   const body: ResearchRequest = req.body;
@@ -197,6 +205,7 @@ export const performResearch = async (req: Request, res: Response) => {
         : null,
     )
     .filter(Boolean);
+
   if (missingItems.length > 0) {
     res.status(400).json({
       error: `Item not in inventory: ${missingItems[0]}`,
@@ -207,11 +216,15 @@ export const performResearch = async (req: Request, res: Response) => {
   const researchResponse = await resolveResearch(
     player.name,
     body.item,
+
     body.resourcesUsed.map((name) => {
-      const r = player.resources.find((r) => r.resourceName === name);
+      const resource = player.resources.find(
+        (resoure) => resoure.resourceName === name,
+      );
+
       return {
-        resourceName: r?.resourceName ?? name,
-        resourceEffect: r?.resourceEffect ?? "",
+        resourceName: resource?.resourceName ?? name,
+        resourceEffect: resource?.resourceEffect ?? "",
         quantity: 1,
       };
     }),
@@ -224,8 +237,13 @@ export const performResearch = async (req: Request, res: Response) => {
     body.playerId,
     body.resourcesUsed,
   );
+
   advanceTurn(newState);
   updateState(gameId, newState);
   res.json(researchResponse);
 };
-gameRoutes.post("/games/:gameId/research", performResearch);
+
+gameRoutes.get("/game/map", getMap);
+gameRoutes.get("/game/:gameId/state", getState);
+gameRoutes.post("/game/:gameId/action", performAction);
+gameRoutes.post("/game/:gameId/research", performResearch);

@@ -67,12 +67,13 @@ export const resolveAttackPrompt = (
       "newAttackerArmyStrength": <attacker remaining strength as integer>,
       "newDefenderArmyStrength": <defender remaining strength as integer, 0 on success>,
       "story": "<short narrative of the event>",
-      "items": [
-        {"itemName": "<name>", "itemEffect": "<short mechanical effect>", "quantity": 1}
+      // TODO: How to tell which player foundItems belong to?
+      "foundItems": [
+        {"itemName": "<name>", "itemEffect": "<short mechanical effect>", "quantity": <how many found, usually 1-2 but small chance of 3-5>}
       ]
     }
 
-    The items array should be empty [] if nothing was found. Include at most two found items.
+    The foundItems array should be empty [] if nothing was found. Include at most two found items.
   `.trim();
 };
 
@@ -105,8 +106,8 @@ export const resolveDiplomacyPrompt = (
     {
       "success": true or false,
       "story": "<short narrative of the event>",
-      "items": [
-        {"itemName": "<name>", "itemEffect": "<short mechanical effect>", "quantity": 1}
+      "foundItems": [
+        {"itemName": "<name>", "itemEffect": "<short mechanical effect>", "quantity": <how many found, usually 1-2 but small chance of 3-5>}
       ]
     }
   `.trim();

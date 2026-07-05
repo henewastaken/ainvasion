@@ -31,6 +31,7 @@ async function llmRequest(
       { role: "user", content: userPrompt },
     ],
   });
+
   return response.message.content;
 }
 
@@ -52,11 +53,13 @@ export async function generateCountryResources(
   Record<string, { favoriteResource: string; hatedResource: string }>
 > {
   console.log("generating resources for", Object.keys(countries), "...");
+
   const raw = await llmRequest(
     "You are a world domination strategy game assistant. Generate resources for each country.",
     generateResourcesPrompt(Object.keys(countries)),
   );
   console.log("llm generated resources", raw);
+
   return parseJson(raw);
 }
 
@@ -79,6 +82,7 @@ export async function resolveAttack(
     targetCountry.name,
     "...",
   );
+
   const raw = await llmRequest(
     "You are a world domination strategy game assistant. Determine outcome of an attack.",
     resolveAttackPrompt(
@@ -90,14 +94,20 @@ export async function resolveAttack(
       storyContext,
     ),
   );
+
   console.log("llm generated attack outcome", raw);
   const outcome = parseJson<Record<string, unknown>>(raw);
+
   return {
     success: Boolean(outcome.success),
-    playerArmyStrength: Number(outcome.newAttackerArmyStrength ?? attackerArmyStrength),
-    enemyArmyStrength: Number(outcome.newDefenderArmyStrength ?? targetCountry.armyStrength),
+    playerArmyStrength: Number(
+      outcome.newAttackerArmyStrength ?? attackerArmyStrength,
+    ),
+    enemyArmyStrength: Number(
+      outcome.newDefenderArmyStrength ?? targetCountry.armyStrength,
+    ),
     story: String(outcome.story ?? ""),
-    items: (outcome.foundItems as Resource[]) ?? [],
+    itemsFound: (outcome.foundItems as Item[]) ?? [],
   };
 }
 
@@ -106,25 +116,27 @@ export async function resolveAttack(
 // ---------------------------------------------------------------------------
 
 export async function resolveDiplomacy(
-  playerEmpireContrieNames: string[],
+  playerEmpireCountryNames: string[],
   targetCountry: Country,
   resourcesUsed: Resource[],
 ): Promise<DiplomacyResponse> {
   console.log(
     "determining diplomatic alliance outcome for",
-    playerEmpireContrieNames.join(", "),
+    playerEmpireCountryNames.join(", "),
     "and",
     targetCountry.name,
     "...",
   );
+
   const raw = await llmRequest(
     "You are a world domination strategy game assistant. Determine outcome of a diplomatic alliance.",
     resolveDiplomacyPrompt(
-      playerEmpireContrieNames,
+      playerEmpireCountryNames,
       targetCountry,
       resourcesUsed,
     ),
   );
+
   console.log("llm generated diplomatic alliance outcome", raw);
   const outcome = parseJson<Record<string, unknown>>(raw);
   return {
@@ -151,16 +163,20 @@ export async function resolveResearch(
     item,
     "...",
   );
+
   const raw = await llmRequest(
     "You are a world domination strategy game assistant. Determine outcome of a research.",
     resolveResearchPrompt(playerName, item, resourcesUsed),
   );
+
   console.log("llm generated research outcome", raw);
   const outcome = parseJson<Record<string, unknown>>(raw);
+
   const researchedItem = outcome.researchedItem as
     | Resource
     | Record<string, never>
     | undefined;
+
   return {
     success: Boolean(outcome.success),
     story: String(outcome.story ?? ""),

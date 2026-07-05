@@ -17,7 +17,7 @@ interface Props {
 /** Return the player index (for color lookup) given an owner_id. */
 function playerIndex(state: GameState, ownerId: string | null): number {
     if (!ownerId) return -1;
-    return state.players.findIndex((p) => p.player_id === ownerId);
+    return state.players.findIndex((player) => player.playerId === ownerId);
 }
 
 /** All countries adjacent to any country in the player's empire that are not owned by them. */
@@ -27,7 +27,7 @@ function adjacentCountries(state: GameState, player: Player): Set<string> {
         const country = state.countries[owned];
         if (!country) continue;
         for (const neighbor of country.adjacency) {
-            if (state.countries[neighbor]?.owner_id !== player.player_id) {
+            if (state.countries[neighbor]?.ownerId !== player.playerId) {
                 adj.add(neighbor);
             }
         }
@@ -36,12 +36,12 @@ function adjacentCountries(state: GameState, player: Player): Set<string> {
 }
 
 export default function EuropeMap({ gameState, playerId, onCountryClick }: Props) {
-    const me = gameState.players.find((p) => p.player_id === playerId);
+    const me = gameState.players.find((player) => player.playerId === playerId);
     const isMyTurn =
-        gameState.current_turn_player_id === playerId &&
+        gameState.currentTurnPlayerId === playerId &&
         gameState.status === "active" &&
         me != null &&
-        !me.has_acted_this_turn;
+        !me.hasActedThisTurn;
 
     const adjacent = me ? adjacentCountries(gameState, me) : new Set<string>();
 
@@ -53,7 +53,7 @@ export default function EuropeMap({ gameState, playerId, onCountryClick }: Props
         >
             {PLACEHOLDER_COUNTRIES.map((pc) => {
                 const backendCountry = gameState.countries[pc.id];
-                const ownerId = backendCountry?.owner_id ?? null;
+                const ownerId = backendCountry?.ownerId ?? null;
                 const ownerIdx = playerIndex(gameState, ownerId);
                 const isAdjacent = adjacent.has(pc.id);
                 const clickable = isMyTurn && isAdjacent;
@@ -69,10 +69,10 @@ export default function EuropeMap({ gameState, playerId, onCountryClick }: Props
                         clickable={clickable}
                         ownerName={
                             ownerId
-                                ? (gameState.players.find((p) => p.player_id === ownerId)?.name ?? "?")
+                                ? (gameState.players.find((player) => player.playerId === ownerId)?.name ?? "?")
                                 : null
                         }
-                        armyStrength={backendCountry?.army_strength ?? 0}
+                        armyStrength={backendCountry?.armyStrength ?? 0}
                         onClick={() => clickable && onCountryClick(pc.id)}
                     />
                 );

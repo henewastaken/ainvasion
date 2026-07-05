@@ -33,6 +33,7 @@ export const PlayerSchema = z.object({
   name: z.string(),
   empire: z.array(z.string()),
   resources: z.array(ResourceSchema).default([]),
+  items: z.array(ItemSchema).default([]),
   armyStrength: z.number().default(100),
   morale: z.number().default(100),
   hasActedThisTurn: z.boolean().default(false),
@@ -83,7 +84,7 @@ export const ActionResponseSchema = z.object({
   playerArmyStrength: z.number(),
   enemyArmyStrength: z.number(),
   story: z.string(),
-  items: z.array(ResourceSchema).default([]),
+  itemsFound: z.array(ItemSchema).default([]),
 });
 
 export type ActionResponse = z.infer<typeof ActionResponseSchema>;

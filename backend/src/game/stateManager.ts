@@ -20,6 +20,7 @@ export function createSession(creatorName: string): {
       { name, ownerId: null, ...data },
     ]),
   );
+
   countries[startCountry].ownerId = playerId;
 
   const player: Player = {
@@ -27,6 +28,7 @@ export function createSession(creatorName: string): {
     name: creatorName,
     empire: [startCountry],
     resources: [],
+    items: [],
     armyStrength: 100,
     morale: 100,
     hasActedThisTurn: false,
@@ -45,8 +47,10 @@ export function createSession(creatorName: string): {
   };
 
   sessions.set(gameId, state);
+
   return { gameId, playerId };
 }
+
 // Add a player to a pending session. Returns new playerId, or null if the
 // game is full / not in pending state.
 export function addPlayer(gameId: string, playerName: string): string | null {
@@ -68,16 +72,21 @@ export function addPlayer(gameId: string, playerName: string): string | null {
     name: playerName,
     empire: [startCountry],
     resources: [],
+    items: [],
     armyStrength: 100,
     morale: 100,
     hasActedThisTurn: false,
   };
+
   state.players.push(player);
+
   return playerId;
 }
+
 export function getSession(gameId: string): GameState | undefined {
   return sessions.get(gameId) as GameState | undefined;
 }
+
 export function updateState(gameId: string, state: GameState): void {
   sessions.set(gameId, state);
 }

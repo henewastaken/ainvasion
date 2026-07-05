@@ -1,5 +1,5 @@
 import { useState } from "react";
-import type { GameState, AttackType, ItemUsed, Resource } from "../../types/game";
+import type { GameState, AttackType, Item, ItemUsed } from "../../types/game";
 import { performAction } from "../../services/api";
 
 interface Props {
@@ -7,7 +7,7 @@ interface Props {
     playerId: string;
     selectedCountry: string;
     onClose: () => void;
-    onResult: (story: string, newItems: Resource[]) => void;
+    onResult: (story: string, newItems: Item[]) => void;
 }
 
 export default function ActionPanel({
@@ -17,7 +17,7 @@ export default function ActionPanel({
     onClose,
     onResult,
 }: Props) {
-    const me = gameState.players.find((p) => p.player_id === playerId)!;
+    const me = gameState.players.find((player) => player.playerId === playerId)!;
     const target = gameState.countries[selectedCountry];
 
     const [attackType, setAttackType] = useState<AttackType>("war");
@@ -37,18 +37,18 @@ export default function ActionPanel({
         setLoading(true);
         setError(null);
         try {
-            const items: ItemUsed[] = me.resources
-                .filter((r) => selectedItems.has(r.item_name))
-                .map((r) => ({ item_name: r.item_name, item_effect: r.item_effect }));
+            const items: ItemUsed[] = me.items
+                .filter((item) => selectedItems.has(item.itemName))
+                .map((item) => ({ itemName: item.itemName, itemEffect: item.itemEffect }));
 
-            const res = await performAction(gameState.game_id, {
-                player_id: playerId,
-                attack: selectedCountry,
-                attack_type: attackType,
-                items_used: items,
+            const res = await performAction(gameState.gameId, {
+                playerId: playerId,
+                target: selectedCountry,
+                attackType: attackType,
+                itemsUsed: items,
             });
 
-            onResult(res.story, res.items);
+            onResult(res.story, res.itemsFound);
             onClose();
         } catch (e: unknown) {
             const msg = e instanceof Error ? e.message : "Action failed.";
@@ -63,13 +63,13 @@ export default function ActionPanel({
             <button className="close-btn" onClick={onClose}>✕</button>
             <h3>Target: {selectedCountry}</h3>
             <p>
-                Army: <strong>{target?.army_strength ?? "?"}</strong> &nbsp;|&nbsp;
+                Army: <strong>{target?.armyStrength ?? "?"}</strong> &nbsp;|&nbsp;
                 Morale: <strong>{target?.morale ?? "?"}</strong>
             </p>
-            {target?.favorite_resource && (
+            {target?.favoriteResource && (
                 <p>
-                    Favourite resource: <em>{target.favorite_resource}</em> &nbsp;|&nbsp;
-                    Hated: <em>{target.hated_resource}</em>
+                    Favourite resource: <em>{target.favoriteResource}</em> &nbsp;|&nbsp;
+                    Hated: <em>{target.hatedResource}</em>
                 </p>
             )}
 
@@ -94,19 +94,19 @@ export default function ActionPanel({
                 </label>
             </div>
 
-            {me.resources.length > 0 && (
+            {me.items.length > 0 && (
                 <div className="item-picker">
                     <p>Use items (optional):</p>
-                    {me.resources.map((r) => (
-                        <label key={r.item_name} className="item-row">
+                    {me.items.map((item) => (
+                        <label key={item.itemName} className="item-row">
                             <input
                                 type="checkbox"
-                                checked={selectedItems.has(r.item_name)}
-                                onChange={() => toggleItem(r.item_name)}
+                                checked={selectedItems.has(item.itemName)}
+                                onChange={() => toggleItem(item.itemName)}
                             />
-                            &nbsp;<strong>{r.item_name}</strong>
-                            <span className="item-effect"> — {r.item_effect}</span>
-                            <span className="item-qty"> ×{r.quantity}</span>
+                            &nbsp;<strong>{item.itemName}</strong>
+                            <span className="item-effect"> — {item.itemEffect}</span>
+                            <span className="item-qty"> ×{item.quantity}</span>
                         </label>
                     ))}
                 </div>

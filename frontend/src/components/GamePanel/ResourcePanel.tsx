@@ -1,4 +1,4 @@
-import type { GameState } from "../../types/game";
+import type { GameState, Resource } from "../../types/game";
 import { PLAYER_COLORS } from "../../data/colors";
 
 interface Props {
@@ -7,7 +7,7 @@ interface Props {
 }
 
 export default function ResourcePanel({ gameState, playerId }: Props) {
-    const me = gameState.players.find((p) => p.player_id === playerId);
+    const me = gameState.players.find((player) => player.playerId === playerId);
     if (!me) return null;
 
     return (
@@ -17,12 +17,12 @@ export default function ResourcePanel({ gameState, playerId }: Props) {
                 <p className="muted">No items yet. Win battles or research to gain them.</p>
             ) : (
                 <ul>
-                    {me.resources.map((r) => (
-                        <li key={r.item_name}>
-                            <strong>{r.item_name}</strong>
-                            <span className="item-qty"> ×{r.quantity}</span>
+                    {me.resources.map((resource: Resource) => (
+                        <li key={resource.resourceName} className="item-row">
+                            <strong>{resource.resourceName}</strong>
+                            <span className="item-qty"> ×{resource.quantity}</span>
                             <br />
-                            <span className="item-effect">{r.item_effect}</span>
+                            <span className="item-effect">{resource.resourceEffect}</span>
                         </li>
                     ))}
                 </ul>
@@ -31,14 +31,14 @@ export default function ResourcePanel({ gameState, playerId }: Props) {
             <hr />
             <h3>Players</h3>
             <ul>
-                {gameState.players.map((p, idx) => (
-                    <li key={p.player_id} style={{ color: PLAYER_COLORS[idx % PLAYER_COLORS.length] }}>
-                        <strong>{p.name}</strong>
-                        {p.player_id === playerId && " (you)"}
-                        {gameState.current_turn_player_id === p.player_id && " ◀ turn"}
+                {gameState.players.map((player, idx) => (
+                    <li key={player.playerId} style={{ color: PLAYER_COLORS[idx % PLAYER_COLORS.length] }}>
+                        <strong>{player.name}</strong>
+                        {player.playerId === playerId && " (you)"}
+                        {gameState.currentTurnPlayerId === player.playerId && " ◀ turn"}
                         <br />
                         <span className="muted">
-                            Army: {p.army_strength} | Territories: {p.empire.length}
+                            Army: {player.armyStrength} | Territories: {player.empire.length}
                         </span>
                     </li>
                 ))}

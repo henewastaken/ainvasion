@@ -16,25 +16,27 @@ const api = axios.create({
 // ── Lobby ─────────────────────────────────────────────────────────────────────
 
 export async function createGame(
-  playerName: string
-): Promise<{ game_id: string; player_id: string }> {
-  const res = await api.post("/game/create", { player_name: playerName });
+  playerName: string,
+): Promise<{ gameId: string; playerId: string }> {
+  const res = await api.post("/game/create", { playerName });
+  console.log(res);
+
   return res.data;
 }
 
 export async function joinGame(
   gameId: string,
-  playerName: string
-): Promise<{ player_id: string }> {
-  const res = await api.post(`/game/join/${gameId}`, { player_name: playerName });
+  playerName: string,
+): Promise<{ playerId: string }> {
+  const res = await api.post(`/game/${gameId}/join`, { playerName });
   return res.data;
 }
 
 export async function startGame(
   gameId: string,
-  playerId: string
+  playerId: string,
 ): Promise<void> {
-  await api.post(`/game/start/${gameId}`, { player_id: playerId });
+  await api.post(`/game/${gameId}/start`, { playerId });
 }
 
 // ── Game ──────────────────────────────────────────────────────────────────────
@@ -51,7 +53,7 @@ export async function getMap(): Promise<Record<string, Country>> {
 
 export async function performAction(
   gameId: string,
-  body: ActionRequest
+  body: ActionRequest,
 ): Promise<ActionResponse> {
   const res = await api.post(`/game/${gameId}/action`, body);
   return res.data;
@@ -59,7 +61,7 @@ export async function performAction(
 
 export async function performResearch(
   gameId: string,
-  body: ResearchRequest
+  body: ResearchRequest,
 ): Promise<ResearchResponse> {
   const res = await api.post(`/game/${gameId}/research`, body);
   return res.data;

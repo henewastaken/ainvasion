@@ -7,7 +7,7 @@ import ActionPanel from "../components/GamePanel/ActionPanel";
 import ResearchPanel from "../components/GamePanel/ResearchPanel";
 import ResourcePanel from "../components/GamePanel/ResourcePanel";
 import StoryPanel from "../components/GamePanel/StoryPanel";
-import type { GameState, Resource, SessionCredentials, WsMessage } from "../types/game";
+import type { GameState, Item, SessionCredentials, WsMessage } from "../types/game";
 
 interface Props {
     session: SessionCredentials | null;
@@ -33,6 +33,7 @@ export default function GamePage({ session }: Props) {
     // Initial state load
     useEffect(() => {
         if (!gameId) return;
+
         getGameState(gameId)
             .then(setGameState)
             .catch(() => setStatusMsg("Could not load game state."));
@@ -40,15 +41,16 @@ export default function GamePage({ session }: Props) {
 
     const handleWsMessage = useCallback((msg: WsMessage) => {
         if (msg.state) setGameState(msg.state);
+
         if (msg.type === "game_over") {
-            const winner = msg.state?.players.find((p) => p.player_id === msg.winner_id);
+            const winner = msg.state?.players.find((player) => player.playerId === msg.winnerId);
             setStatusMsg(`🏆 Game over! ${winner?.name ?? "Someone"} has conquered Europe!`);
         }
     }, []);
 
     const { connected } = useWebSocket(
         gameId ?? null,
-        session?.player_id ?? null,
+        session?.playerId ?? null,
         handleWsMessage
     );
 
@@ -57,11 +59,13 @@ export default function GamePage({ session }: Props) {
         setActivePanel("action");
     }
 
-    function handleActionResult(story: string, newItems: Resource[]) {
+    function handleActionResult(story: string, newItems: Item[]) {
         setStatusMsg(story);
+
         if (newItems.length > 0) {
-            setStatusMsg((prev) => prev + ` (Found: ${newItems.map((i) => i.item_name).join(", ")})`);
+            setStatusMsg((prev) => prev + ` (Found: ${newItems.map((item) => item.itemName).join(", ")})`);
         }
+
         setSelectedCountry(null);
         setActivePanel(null);
     }
@@ -73,9 +77,10 @@ export default function GamePage({ session }: Props) {
 
     async function handleStartGame() {
         if (!gameId || !session) return;
+
         setStarting(true);
         try {
-            await startGame(gameId, session.player_id);
+            await startGame(gameId, session.playerId);
         } catch {
             setStatusMsg("Failed to start game.");
         } finally {
@@ -87,35 +92,35 @@ export default function GamePage({ session }: Props) {
         return <div className="loading">Loading game…</div>;
     }
 
-    const me = gameState.players.find((p) => p.player_id === session.player_id);
+    const me = gameState.players.find((player) => player.playerId === session.playerId);
     const isMyTurn =
-        gameState.current_turn_player_id === session.player_id &&
+        gameState.currentTurnPlayerId === session.playerId &&
         gameState.status === "active" &&
         me != null &&
-        !me.has_acted_this_turn;
-    const isCreator = gameState.creator_id === session.player_id;
+        !me.hasActedThisTurn;
+    const isCreator = gameState.creatorId === session.playerId;
 
     const currentPlayerName =
-        gameState.players.find((p) => p.player_id === gameState.current_turn_player_id)?.name ?? "?";
+        gameState.players.find((p) => p.playerId === gameState.currentTurnPlayerId)?.name ?? "?";
 
     return (
         <div className="game-page">
             {/* ── Header bar ── */}
             <header className="game-header">
-                <span>🌍 World Domination</span>
+                <span>World Domination</span>
                 <span>
-                    Turn {gameState.turn_number} &nbsp;|&nbsp;
-                    {isMyTurn ? "⚡ Your turn" : `Waiting for ${currentPlayerName}…`}
+                    Turn {gameState.turnNumber} &nbsp;|&nbsp;
+                    {isMyTurn ? "Your turn" : `Waiting for ${currentPlayerName}…`}
                 </span>
                 <span className={`ws-status ${connected ? "connected" : "disconnected"}`}>
-                    {connected ? "● Live" : "○ Reconnecting…"}
+                    {connected ? "Live" : "○ Reconnecting…"}
                 </span>
             </header>
 
             <div className="game-layout">
                 {/* ── Left sidebar ── */}
                 <aside className="sidebar left">
-                    <ResourcePanel gameState={gameState} playerId={session.player_id} />
+                    <ResourcePanel gameState={gameState} playerId={session.playerId} />
 
                     {gameState.status === "pending" && isCreator && (
                         <button
@@ -123,7 +128,7 @@ export default function GamePage({ session }: Props) {
                             onClick={handleStartGame}
                             disabled={starting}
                         >
-                            {starting ? "Starting…" : "▶ Start Game"}
+                            {starting ? "Starting…" : "Start Game"}
                         </button>
                     )}
 
@@ -134,7 +139,7 @@ export default function GamePage({ session }: Props) {
                     {isMyTurn && activePanel === null && (
                         <div className="action-choice">
                             <p>Choose your action:</p>
-                            <p className="muted">Click an adjacent country on the map to attack/negotiate,</p>
+                            <p className="muted">Click an adjacent country on the map to attack/negotiate, you are {me?.empire}</p>
                             <button onClick={() => setActivePanel("research")}>🔬 Research</button>
                         </div>
                     )}
@@ -142,7 +147,7 @@ export default function GamePage({ session }: Props) {
                     {activePanel === "research" && (
                         <ResearchPanel
                             gameState={gameState}
-                            playerId={session.player_id}
+                            playerId={session.playerId}
                             onClose={() => setActivePanel(null)}
                             onResult={handleResearchResult}
                         />
@@ -151,7 +156,7 @@ export default function GamePage({ session }: Props) {
                     {activePanel === "action" && selectedCountry && (
                         <ActionPanel
                             gameState={gameState}
-                            playerId={session.player_id}
+                            playerId={session.playerId}
                             selectedCountry={selectedCountry}
                             onClose={() => { setActivePanel(null); setSelectedCountry(null); }}
                             onResult={handleActionResult}
@@ -165,14 +170,14 @@ export default function GamePage({ session }: Props) {
                     <div className="game-id-display">Game ID: <code>{gameId}</code></div>
                     <EuropeMap
                         gameState={gameState}
-                        playerId={session.player_id}
+                        playerId={session.playerId}
                         onCountryClick={handleCountryClick}
                     />
                 </main>
 
                 {/* ── Right sidebar ── */}
                 <aside className="sidebar right">
-                    <StoryPanel log={gameState.story_log} />
+                    <StoryPanel log={gameState.storyLog} />
                 </aside>
             </div>
         </div>

@@ -12,7 +12,7 @@ export default function LobbyPage({ onSession }: Props) {
 
     return (
         <div className="lobby-page">
-            <h1>🌍 World Domination</h1>
+            <h1>World Domination</h1>
             <div className="tab-bar">
                 <button
                     className={tab === "create" ? "active" : ""}
