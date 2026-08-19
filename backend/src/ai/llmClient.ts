@@ -142,8 +142,6 @@ export async function resolveDiplomacy(
   return {
     success: Boolean(outcome.success),
     story: String(outcome.story ?? ""),
-    itemsUsed: (outcome.items as Item[]) ?? [],
-    resourceUsed: (outcome.resourceUsed as Resource[]) ?? null,
   };
 }
 
@@ -180,8 +178,6 @@ export async function resolveResearch(
   return {
     success: Boolean(outcome.success),
     story: String(outcome.story ?? ""),
-    itemsUsed: (outcome.items as Item[]) ?? [],
-    resourceUsed: (outcome.resourceUsed as Resource[]) ?? null,
     researchedItem:
       researchedItem && Object.keys(researchedItem).length > 0
         ? (researchedItem as Resource)

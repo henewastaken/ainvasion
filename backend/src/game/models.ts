@@ -92,8 +92,6 @@ export type ActionResponse = z.infer<typeof ActionResponseSchema>;
 export const DiplomacyResponseSchema = z.object({
   success: z.boolean(),
   story: z.string(),
-  itemsUsed: z.array(ItemSchema).default([]),
-  resourceUsed: z.array(ResourceSchema).nullable(),
 });
 
 export type DiplomacyResponse = z.infer<typeof DiplomacyResponseSchema>;
@@ -101,8 +99,6 @@ export type DiplomacyResponse = z.infer<typeof DiplomacyResponseSchema>;
 export const ResearchResponseSchema = z.object({
   success: z.boolean(),
   story: z.string(),
-  itemsUsed: z.array(ItemSchema).default([]),
-  resourceUsed: z.array(ResourceSchema).nullable(),
   researchedItem: ResourceSchema.nullable(),
 });
 

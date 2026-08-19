@@ -178,7 +178,7 @@ export const applyResearchResult = (
   resourcesUsed: string[],
 ): GameState => {
   const player: Player | undefined = state.players.find(
-    (p) => p.playerId === playerId,
+    (player) => player.playerId === playerId,
   );
 
   if (!player) {

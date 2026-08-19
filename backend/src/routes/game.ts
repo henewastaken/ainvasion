@@ -10,9 +10,7 @@ import {
 } from "../game/gameEngine";
 import {
   ActionRequest,
-  ActionResponse,
   Country,
-  DiplomacyResponse,
   GameState,
   Player,
   ResearchRequest,
@@ -129,40 +127,54 @@ export const performAction = async (req: Request, res: Response) => {
 
   player.hasActedThisTurn = true;
 
-  let response: ActionResponse | DiplomacyResponse;
-  let newState;
-
   // Resolve the action based on the attackType (war or diplomatic)
-  if (body.attackType === "diplomatic") {
+  const handlers = {
     // TODO: resoleDiplomacy takes a Country as parameter. Now Player has no Country
     // Should whole Player schema be redesign, or should all data come from body?
     // Also should Player have country that is one big country where all new countries gets merged into
-    response = await resolveDiplomacy(player.empire, target, mappedItems);
-    newState = applyDiplomacyResult(
-      state,
-      response,
-      body.playerId,
-      body.target,
-      body.itemsUsed,
-    );
+    diplomatic: async () => {
+      const outcome = await resolveDiplomacy(
+        player.empire,
+        target,
+        mappedItems,
+      );
+
+      return {
+        response: outcome,
+        newState: applyDiplomacyResult(
+          state,
+          outcome,
+          body.playerId,
+          body.target,
+          body.itemsUsed,
+        ),
+      };
+    },
     // Resolve Attack
-  } else {
-    response = await resolveAttack(
-      player.empire,
-      player.armyStrength,
-      player.morale,
-      target,
-      mappedItems,
-      storyContext,
-    );
-    newState = applyActionResult(
-      state,
-      response,
-      body.playerId,
-      body.target,
-      body.itemsUsed,
-    );
-  }
+    war: async () => {
+      const outcome = await resolveAttack(
+        player.empire,
+        player.armyStrength,
+        player.morale,
+        target,
+        mappedItems,
+        storyContext,
+      );
+
+      return {
+        response: outcome,
+        newState: applyActionResult(
+          state,
+          outcome,
+          body.playerId,
+          body.target,
+          body.itemsUsed,
+        ),
+      };
+    },
+  };
+
+  const { response, newState } = await handlers[body.attackType]();
 
   const winner = checkVictory(newState);
   if (winner) {
@@ -219,7 +231,7 @@ export const performResearch = async (req: Request, res: Response) => {
 
     body.resourcesUsed.map((name) => {
       const resource = player.resources.find(
-        (resoure) => resoure.resourceName === name,
+        (resource) => resource.resourceName === name,
       );
 
       return {
