@@ -1,0 +1,135 @@
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  font-family: 'Segoe UI', system-ui, sans-serif;
+  background: #1a1a2e;
+  color: #e0e0e0;
+  min-height: 100vh;
+}
+
+/* ── Lobby ─────────────────────────────────────────────────────────────────── */
+.lobby-page {
+  max-width: 480px;
+  margin: 60px auto;
+  text-align: center;
+}
+.lobby-page h1 { font-size: 2rem; margin-bottom: 24px; color: #f5c542; }
+
+.tab-bar { display: flex; gap: 8px; justify-content: center; margin-bottom: 20px; }
+.tab-bar button {
+  padding: 8px 20px; border: 1px solid #444; background: #16213e;
+  color: #aaa; border-radius: 4px; cursor: pointer; font-size: 14px;
+}
+.tab-bar button.active { background: #f5c542; color: #1a1a2e; border-color: #f5c542; font-weight: bold; }
+
+.lobby-card {
+  background: #16213e; border: 1px solid #333; border-radius: 8px;
+  padding: 28px; display: flex; flex-direction: column; gap: 12px;
+}
+.lobby-card h2 { color: #f5c542; margin-bottom: 4px; }
+.game-id {
+  display: block; background: #0f3460; padding: 10px 14px; border-radius: 6px;
+  font-size: 13px; word-break: break-all; letter-spacing: 0.04em; color: #7ecfff;
+}
+
+/* ── Shared inputs / buttons ────────────────────────────────────────────────── */
+input[type="text"] {
+  width: 100%; padding: 10px 12px; border-radius: 6px;
+  border: 1px solid #444; background: #0f3460; color: #e0e0e0;
+  font-size: 14px;
+}
+input[type="text"]:focus { outline: none; border-color: #f5c542; }
+
+button {
+  padding: 10px 18px; border-radius: 6px; border: none;
+  background: #f5c542; color: #1a1a2e; font-weight: bold;
+  cursor: pointer; font-size: 14px; transition: opacity .15s;
+}
+button:disabled { opacity: .45; cursor: not-allowed; }
+button:not(:disabled):hover { opacity: .85; }
+
+.error { color: #e05c5c; font-size: 13px; }
+.muted { color: #888; font-size: 13px; }
+
+/* ── Game layout ────────────────────────────────────────────────────────────── */
+.game-page { display: flex; flex-direction: column; height: 100vh; overflow: hidden; }
+
+.game-header {
+  display: flex; justify-content: space-between; align-items: center;
+  padding: 8px 20px; background: #0f3460; border-bottom: 1px solid #333;
+  font-size: 14px;
+}
+.ws-status.connected { color: #5cb85c; }
+.ws-status.disconnected { color: #e05c5c; }
+
+.game-layout {
+  display: grid;
+  grid-template-columns: 280px 1fr 280px;
+  flex: 1;
+  overflow: hidden;
+}
+
+.sidebar {
+  background: #16213e;
+  border-right: 1px solid #2a2a4a;
+  overflow-y: auto;
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.sidebar.right { border-right: none; border-left: 1px solid #2a2a4a; }
+
+.map-area {
+  display: flex; flex-direction: column; align-items: center;
+  overflow-y: auto; padding: 16px; background: #1a1a2e;
+}
+
+.status-banner {
+  width: 100%; background: #0f3460; border: 1px solid #f5c542;
+  border-radius: 6px; padding: 10px 14px; font-size: 13px;
+  margin-bottom: 12px; line-height: 1.5;
+}
+
+.game-id-display {
+  font-size: 12px; color: #666; margin-bottom: 8px;
+}
+.game-id-display code { color: #7ecfff; }
+
+/* ── Panels ─────────────────────────────────────────────────────────────────── */
+.panel {
+  background: #0f3460; border: 1px solid #2a2a4a;
+  border-radius: 8px; padding: 14px;
+  display: flex; flex-direction: column; gap: 10px;
+}
+.panel h3 { color: #f5c542; font-size: 14px; margin-bottom: 2px; }
+.panel ul { list-style: none; display: flex; flex-direction: column; gap: 8px; }
+.panel ul li { font-size: 13px; line-height: 1.5; }
+
+.close-btn {
+  align-self: flex-end; background: transparent; color: #aaa;
+  border: none; font-size: 16px; padding: 0; cursor: pointer;
+  line-height: 1;
+}
+.close-btn:hover { color: #fff; opacity: 1; }
+
+.attack-type { display: flex; gap: 20px; font-size: 13px; }
+.attack-type label { display: flex; align-items: center; cursor: pointer; }
+
+.item-picker { display: flex; flex-direction: column; gap: 6px; font-size: 13px; }
+.item-row { display: flex; align-items: baseline; gap: 4px; cursor: pointer; }
+.item-effect { color: #888; font-size: 12px; }
+.item-qty { color: #f5c542; font-size: 11px; }
+
+/* ── Story panel ─────────────────────────────────────────────────────────────── */
+.story-panel { flex: 1; min-height: 0; }
+.story-scroll { overflow-y: auto; max-height: 60vh; display: flex; flex-direction: column; gap: 10px; }
+.story-entry { font-size: 12px; line-height: 1.6; border-left: 2px solid #f5c54280; padding-left: 8px; }
+.story-num { color: #f5c542; font-weight: bold; margin-right: 4px; }
+
+/* ── Action/start buttons ────────────────────────────────────────────────────── */
+.start-btn { background: #5cb85c; }
+.action-choice { display: flex; flex-direction: column; gap: 8px; }
+.action-choice p { font-size: 13px; }
+
+.loading { text-align: center; padding: 80px; font-size: 18px; color: #888; }
