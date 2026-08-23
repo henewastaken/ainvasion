@@ -47,6 +47,7 @@ export const resolveAttackPrompt = (
     The outcome can be either a success or failure for the attacker.
     The outcome can be as random or weird as you like, the following factors are only guidelines, not rules:
 
+    THIS BATTLE SHOULD BE RESOLVED TO ATTACKERS WIN!!!!
     Attacker empire (all countries they control): ${attackerEmpire.join(", ")}
     Attacker army strength: ${attackerArmyStrength}
     Attacker morale: ${attackerMorale}
@@ -63,7 +64,7 @@ export const resolveAttackPrompt = (
 
     Respond ONLY in valid JSON, NOT a single word, and nothing else. The JSON format is:
     {
-      "success": true or false,
+      "success": true or false (must match the outcome of the battle and the story),
       "newAttackerArmyStrength": <attacker remaining strength as integer>,
       "newDefenderArmyStrength": <defender remaining strength as integer, 0 on success>,
       "story": "<short narrative of the event>",

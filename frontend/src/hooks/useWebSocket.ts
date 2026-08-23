@@ -31,6 +31,13 @@ export function useWebSocket(
     wsRef.current = ws;
 
     ws.onopen = () => {
+      // The effect may have been torn down while we were still connecting
+      // (e.g. StrictMode remount). If a newer socket has taken over, drop this
+      // one now that it is safely OPEN rather than aborting a CONNECTING socket.
+      if (wsRef.current !== ws) {
+        ws.close();
+        return;
+      }
       setConnected(true);
     };
 
@@ -48,6 +55,8 @@ export function useWebSocket(
     };
 
     ws.onclose = () => {
+      // Ignore close events from a socket that has already been superseded.
+      if (wsRef.current !== ws) return;
       setConnected(false);
       if (shouldReconnect.current) {
         reconnectTimer.current = setTimeout(connect, RECONNECT_DELAY_MS);
@@ -66,7 +75,18 @@ export function useWebSocket(
     return () => {
       shouldReconnect.current = false;
       if (reconnectTimer.current) clearTimeout(reconnectTimer.current);
-      wsRef.current?.close();
+
+      const ws = wsRef.current;
+      wsRef.current = null; // mark superseded so pending handlers bail out
+      if (!ws) return;
+
+      if (ws.readyState === WebSocket.OPEN) {
+        ws.close();
+      } else if (ws.readyState === WebSocket.CONNECTING) {
+        // Closing a CONNECTING socket logs "closed before the connection is
+        // established". Defer the close until it opens instead.
+        ws.onopen = () => ws.close();
+      }
     };
   }, [connect]);
 
