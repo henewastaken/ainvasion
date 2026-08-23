@@ -223,13 +223,25 @@ export default function EuropeMap({ gameState, playerId, onCountryClick }: Props
             ppuY: ctm ? 1 / ctm.d : view.h,
         };
         movedRef.current = false;
-        svgRef.current?.setPointerCapture(e.pointerId);
+        // Do NOT capture the pointer here. Per the Pointer Events spec, while a
+        // pointer is captured the resulting `click` is dispatched to the capture
+        // target (this <svg>), never to the country <path> under the cursor — so
+        // capturing on press would kill every country click. We only capture once
+        // a real drag begins (see onPointerMove), which a plain click never does.
         if (svgRef.current) svgRef.current.style.cursor = "grabbing";
     };
     const onPointerMove = (e: ReactPointerEvent<SVGSVGElement>) => {
         const pan = panRef.current;
         if (!pan.active) return;
-        if (Math.hypot(e.clientX - pan.sx, e.clientY - pan.sy) > 4) movedRef.current = true;
+        if (!movedRef.current) {
+            // Below the 4px threshold this is still a potential click, not a drag:
+            // don't move the view and don't capture, so the click can reach a path.
+            if (Math.hypot(e.clientX - pan.sx, e.clientY - pan.sy) <= 4) return;
+            movedRef.current = true;
+            // Now it's a genuine drag — capture so panning keeps tracking even if
+            // the pointer leaves the svg.
+            svgRef.current?.setPointerCapture(e.pointerId);
+        }
         // Convert the pixel drag into viewBox units and move opposite to the drag.
         const dx = (e.clientX - pan.sx) * pan.ppuX;
         const dy = (e.clientY - pan.sy) * pan.ppuY;
@@ -237,7 +249,8 @@ export default function EuropeMap({ gameState, playerId, onCountryClick }: Props
     };
     const endPan = (e: ReactPointerEvent<SVGSVGElement>) => {
         panRef.current.active = false;
-        svgRef.current?.releasePointerCapture(e.pointerId);
+        // Only release if we actually captured (i.e. a drag happened).
+        if (movedRef.current) svgRef.current?.releasePointerCapture(e.pointerId);
         if (svgRef.current) svgRef.current.style.cursor = "grab";
     };
 
@@ -305,88 +318,89 @@ export default function EuropeMap({ gameState, playerId, onCountryClick }: Props
                 onPointerUp={endPan}
                 onPointerLeave={endPan}
             >
-            {/* Country shapes */}
-            {SHAPES.map((shape) => {
-                const clickable = isMyTurn && adjacent.has(shape.id);
-                const isHovered = hoveredId === shape.id;
-                return (
-                    <path
-                        key={shape.id}
-                        d={shape.d}
-                        fill={fillFor(shape.id)}
-                        stroke={isHovered ? HOVER_STROKE : BORDER}
-                        strokeWidth={isHovered ? 2 : 0.6}
-                        strokeLinejoin="round"
-                        opacity={hoveredId && !isHovered ? 0.9 : 1}
-                        style={{
-                            cursor: clickable ? "pointer" : "default",
-                            transition: "fill 200ms ease, opacity 200ms ease",
-                        }}
-                        onMouseEnter={() => setHoveredId(shape.id)}
-                        onMouseLeave={() =>
-                            setHoveredId((cur) => (cur === shape.id ? null : cur))
-                        }
-                        onClick={() => {
-                            if (movedRef.current) return; // was a drag-pan, not a click
-                            if (clickable) onCountryClick(shape.id);
-                        }}
-                    >
-                        <title>{titleFor(shape)}</title>
-                    </path>
-                );
-            })}
-
-            {/* Re-draw the hovered outline on top so neighbouring fills never cover it */}
-            {hovered && (
-                <path
-                    d={hovered.d}
-                    fill="none"
-                    stroke={HOVER_STROKE}
-                    strokeWidth={2.4}
-                    strokeLinejoin="round"
-                    style={{ pointerEvents: "none" }}
-                />
-            )}
-
-            {/* Labels: country code, plus army strength for countries currently in play */}
-            {SHAPES.filter((s) => s.labelled).map((shape) => {
-                const country = gameState.countries[shape.id];
-                return (
-                    <g key={`label-${shape.id}`} style={{ pointerEvents: "none" }}>
-                        <text
-                            x={shape.cx}
-                            y={country ? shape.cy - 3 : shape.cy}
-                            textAnchor="middle"
-                            dominantBaseline="middle"
-                            fontSize={9}
-                            fontWeight={700}
-                            fill="#ffffff"
-                            stroke="rgba(0,0,0,0.55)"
-                            strokeWidth={2}
-                            paintOrder="stroke"
-                            style={{ userSelect: "none" }}
+                {/* Country shapes */}
+                {SHAPES.map((shape) => {
+                    const clickable = isMyTurn && adjacent.has(shape.id);
+                    const isHovered = hoveredId === shape.id;
+                    return (
+                        <path
+                            key={shape.id}
+                            d={shape.d}
+                            fill={fillFor(shape.id)}
+                            stroke={isHovered ? HOVER_STROKE : BORDER}
+                            strokeWidth={isHovered ? 2 : 0.6}
+                            strokeLinejoin="round"
+                            opacity={hoveredId && !isHovered ? 0.9 : 1}
+                            style={{
+                                cursor: clickable ? "pointer" : "default",
+                                transition: "fill 200ms ease, opacity 200ms ease",
+                            }}
+                            onMouseEnter={() => setHoveredId(shape.id)}
+                            onMouseLeave={() =>
+                                setHoveredId((cur) => (cur === shape.id ? null : cur))
+                            }
+                            onClick={() => {
+                                console.log(movedRef.current, "Clicked country:", shape.id);
+                                if (movedRef.current) return; // was a drag-pan, not a click
+                                if (clickable) onCountryClick(shape.id);
+                            }}
                         >
-                            {shape.iso2 || shape.id.slice(0, 2).toUpperCase()}
-                        </text>
-                        {country && (
+                            <title>{titleFor(shape)}</title>
+                        </path>
+                    );
+                })}
+
+                {/* Re-draw the hovered outline on top so neighbouring fills never cover it */}
+                {hovered && (
+                    <path
+                        d={hovered.d}
+                        fill="none"
+                        stroke={HOVER_STROKE}
+                        strokeWidth={2.4}
+                        strokeLinejoin="round"
+                        style={{ pointerEvents: "none" }}
+                    />
+                )}
+
+                {/* Labels: country code, plus army strength for countries currently in play */}
+                {SHAPES.filter((s) => s.labelled).map((shape) => {
+                    const country = gameState.countries[shape.id];
+                    return (
+                        <g key={`label-${shape.id}`} style={{ pointerEvents: "none" }}>
                             <text
                                 x={shape.cx}
-                                y={shape.cy + 8}
+                                y={country ? shape.cy - 3 : shape.cy}
                                 textAnchor="middle"
                                 dominantBaseline="middle"
-                                fontSize={7.5}
+                                fontSize={9}
+                                fontWeight={700}
                                 fill="#ffffff"
                                 stroke="rgba(0,0,0,0.55)"
-                                strokeWidth={1.6}
+                                strokeWidth={2}
                                 paintOrder="stroke"
                                 style={{ userSelect: "none" }}
                             >
-                                ⚔ {country.armyStrength}
+                                {shape.iso2 || shape.id.slice(0, 2).toUpperCase()}
                             </text>
-                        )}
-                    </g>
-                );
-            })}
+                            {country && (
+                                <text
+                                    x={shape.cx}
+                                    y={shape.cy + 8}
+                                    textAnchor="middle"
+                                    dominantBaseline="middle"
+                                    fontSize={7.5}
+                                    fill="#ffffff"
+                                    stroke="rgba(0,0,0,0.55)"
+                                    strokeWidth={1.6}
+                                    paintOrder="stroke"
+                                    style={{ userSelect: "none" }}
+                                >
+                                    ⚔ {country.armyStrength}
+                                </text>
+                            )}
+                        </g>
+                    );
+                })}
             </svg>
 
             {/* Zoom controls (for trackpad / touch, in addition to wheel + drag) */}
