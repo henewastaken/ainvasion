@@ -35,11 +35,11 @@ export default function ResearchPanel({ gameState, playerId, onClose, onResult }
                 item: item.trim(),
                 resourcesUsed: Array.from(selectedResources),
             });
-            onResult(`Researched: ${res.researchedItem} — ${res.researchedItem?.itemEffect}`);
+            onResult(`Researched: ${res.researchedItem} ${res.researchedItem?.itemEffect}`);
             onClose();
-        } catch (e: unknown) {
-            const msg = e instanceof Error ? e.message : "Research failed.";
-            setError(msg);
+        } catch (error) {
+            const errorMessage = error instanceof Error ? error.message : "Research failed.";
+            setError(errorMessage);
         } finally {
             setLoading(false);
         }
@@ -47,7 +47,7 @@ export default function ResearchPanel({ gameState, playerId, onClose, onResult }
 
     return (
         <div className="panel research-panel">
-            <button className="close-btn" onClick={onClose}>✕</button>
+            <button className="close-btn" onClick={onClose}>X</button>
             <h3>Research</h3>
             <input
                 type="text"
@@ -78,7 +78,7 @@ export default function ResearchPanel({ gameState, playerId, onClose, onResult }
             {error && <p className="error">{error}</p>}
 
             <button onClick={handleSubmit} disabled={loading || !item.trim()}>
-                {loading ? "Researching…" : "🔬 Research"}
+                {loading ? "Researching…" : "Research"}
             </button>
         </div>
     );

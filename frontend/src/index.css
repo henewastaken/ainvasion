@@ -27,6 +27,21 @@ body {
   padding: 28px; display: flex; flex-direction: column; gap: 12px;
 }
 .lobby-card h2 { color: #f5c542; margin-bottom: 4px; }
+
+/* Online / local mode picker + local player list */
+.mode-choice {
+  display: flex; gap: 16px; justify-content: center; flex-wrap: wrap;
+  font-size: 14px; color: #ccc; margin-bottom: 4px;
+}
+.mode-choice label { cursor: pointer; }
+.local-player-row { display: flex; gap: 8px; align-items: center; }
+.remove-player-btn, .add-player-btn {
+  background: transparent; color: #aaa; border: 1px solid #444;
+  font-weight: normal;
+}
+.remove-player-btn { padding: 8px 12px; flex: 0 0 auto; }
+.remove-player-btn:not(:disabled):hover { color: #e05c5c; border-color: #e05c5c; opacity: 1; }
+.add-player-btn:not(:disabled):hover { color: #f5c542; border-color: #f5c542; opacity: 1; }
 .game-id {
   display: block; background: #0f3460; padding: 10px 14px; border-radius: 6px;
   font-size: 13px; word-break: break-all; letter-spacing: 0.04em; color: #7ecfff;
