@@ -35,7 +35,7 @@ export default function ResourcePanel({ gameState, playerId }: Props) {
                     <li key={player.playerId} style={{ color: PLAYER_COLORS[idx % PLAYER_COLORS.length] }}>
                         <strong>{player.name}</strong>
                         {player.playerId === playerId && " (you)"}
-                        {gameState.currentTurnPlayerId === player.playerId && " ◀ turn"}
+                        {gameState.currentTurnPlayerId === player.playerId && " turn"}
                         <br />
                         <span className="muted">
                             Army: {player.armyStrength} | Territories: {player.empire.length}

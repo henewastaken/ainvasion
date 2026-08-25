@@ -64,15 +64,15 @@ interface Shape {
 const LABEL_AREA_THRESHOLD = 130;
 
 const SHAPES: Shape[] = COUNTRIES.features
-    .map((f): Shape | null => {
-        const d = pathGen(f);
+    .map((feature): Shape | null => {
+        const d = pathGen(feature);
         if (!d) return null;
-        const [cx, cy] = pathGen.centroid(f);
-        const area = pathGen.area(f);
+        const [cx, cy] = pathGen.centroid(feature);
+        const area = pathGen.area(feature);
         return {
-            id: f.properties.id,
-            name: f.properties.name,
-            iso2: f.properties.iso2,
+            id: feature.properties.id,
+            name: feature.properties.name,
+            iso2: feature.properties.iso2,
             d,
             cx,
             cy,
@@ -278,13 +278,13 @@ export default function EuropeMap({ gameState, playerId, onCountryClick }: Props
     const titleFor = (shape: Shape): string => {
         const country = gameState.countries[shape.id];
         if (!country) return shape.name; // in the map but not (yet) in play
-        if (!country.ownerId) return `${shape.name} — neutral (⚔ ${country.armyStrength})`;
-        const owner = gameState.players.find((p) => p.playerId === country.ownerId);
-        return `${shape.name} — ${owner?.name ?? "?"} (⚔ ${country.armyStrength})`;
+        if (!country.ownerId) return `${shape.name} neutral (${country.armyStrength})`;
+        const owner = gameState.players.find((player) => player.playerId === country.ownerId);
+        return `${shape.name} ${owner?.name ?? "?"} (${country.armyStrength})`;
     };
 
     const hovered = hoveredId
-        ? (SHAPES.find((s) => s.id === hoveredId) ?? null)
+        ? (SHAPES.find((shape) => shape.id === hoveredId) ?? null)
         : null;
 
     return (
@@ -340,6 +340,7 @@ export default function EuropeMap({ gameState, playerId, onCountryClick }: Props
                                 setHoveredId((cur) => (cur === shape.id ? null : cur))
                             }
                             onClick={() => {
+                                // TODO: Remember to remove
                                 console.log(movedRef.current, "Clicked country:", shape.id);
                                 if (movedRef.current) return; // was a drag-pan, not a click
                                 if (clickable) onCountryClick(shape.id);
@@ -395,7 +396,7 @@ export default function EuropeMap({ gameState, playerId, onCountryClick }: Props
                                     paintOrder="stroke"
                                     style={{ userSelect: "none" }}
                                 >
-                                    ⚔ {country.armyStrength}
+                                    {country.armyStrength}
                                 </text>
                             )}
                         </g>

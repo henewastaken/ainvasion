@@ -27,12 +27,16 @@ export default function GamePage({ session }: Props) {
 
     // Redirect to lobby if no session credentials
     useEffect(() => {
-        if (!session) navigate("/");
+        if (!session) {
+            navigate("/");
+        }
     }, [session, navigate]);
 
     // Initial state load
     useEffect(() => {
-        if (!gameId) return;
+        if (!gameId) {
+            return;
+        }
 
         getGameState(gameId)
             .then(setGameState)
@@ -40,11 +44,13 @@ export default function GamePage({ session }: Props) {
     }, [gameId]);
 
     const handleWsMessage = useCallback((msg: WsMessage) => {
-        if (msg.state) setGameState(msg.state);
+        if (msg.state) {
+            setGameState(msg.state);
+        }
 
         if (msg.type === "game_over") {
             const winner = msg.state?.players.find((player) => player.playerId === msg.winnerId);
-            setStatusMsg(`🏆 Game over! ${winner?.name ?? "Someone"} has conquered Europe!`);
+            setStatusMsg(`Game over! ${winner?.name ?? "Someone"} has conquered Europe!`);
         }
     }, []);
 
@@ -55,6 +61,7 @@ export default function GamePage({ session }: Props) {
     );
 
     function handleCountryClick(countryName: string) {
+        // TODO: Remember to remove
         console.log("Clicked country:", countryName);
         setSelectedCountry(countryName);
         setActivePanel("action");
@@ -94,16 +101,34 @@ export default function GamePage({ session }: Props) {
         return <div className="loading">Loading game…</div>;
     }
 
-    const me = gameState.players.find((player) => player.playerId === session.playerId);
+    // In a local game every player shares this device, so we act
+    // as whichever player's turn it currently is. Online games act as the single
+    // session player.
+    const isLocal = session.localPlayers && session.localPlayers.length > 0;
+    const activePlayerId =
+        isLocal && gameState.status === "active"
+            ? gameState.currentTurnPlayerId
+            : session.playerId;
+
+    const me = gameState.players.find((player) => player.playerId === activePlayerId);
     const isMyTurn =
-        gameState.currentTurnPlayerId === session.playerId &&
+        gameState.currentTurnPlayerId === activePlayerId &&
         gameState.status === "active" &&
         me != null &&
         !me.hasActedThisTurn;
+    // Only the host (creator) may start the game, even in local play.
     const isCreator = gameState.creatorId === session.playerId;
 
     const currentPlayerName =
         gameState.players.find((p) => p.playerId === gameState.currentTurnPlayerId)?.name ?? "?";
+
+    const turnLabel = isLocal
+        ? gameState.status === "active"
+            ? `${currentPlayerName}'s turn`
+            : "Waiting to start…"
+        : isMyTurn
+            ? "Your turn"
+            : `Waiting for ${currentPlayerName}…`;
 
     return (
         <div className="game-page">
@@ -112,17 +137,17 @@ export default function GamePage({ session }: Props) {
                 <span>World Domination</span>
                 <span>
                     Turn {gameState.turnNumber} &nbsp;|&nbsp;
-                    {isMyTurn ? "Your turn" : `Waiting for ${currentPlayerName}…`}
+                    {turnLabel}
                 </span>
                 <span className={`ws-status ${connected ? "connected" : "disconnected"}`}>
-                    {connected ? "Live" : "○ Reconnecting…"}
+                    {connected ? "Live" : "Reconnecting…"}
                 </span>
             </header>
 
             <div className="game-layout">
                 {/* ── Left sidebar ── */}
                 <aside className="sidebar left">
-                    <ResourcePanel gameState={gameState} playerId={session.playerId} />
+                    <ResourcePanel gameState={gameState} playerId={activePlayerId} />
 
                     {gameState.status === "pending" && isCreator && (
                         <button
@@ -142,14 +167,14 @@ export default function GamePage({ session }: Props) {
                         <div className="action-choice">
                             <p>Choose your action:</p>
                             <p className="muted">Click an adjacent country on the map to attack/negotiate, you are {me?.empire}</p>
-                            <button onClick={() => setActivePanel("research")}>🔬 Research</button>
+                            <button onClick={() => setActivePanel("research")}>Research</button>
                         </div>
                     )}
 
                     {activePanel === "research" && (
                         <ResearchPanel
                             gameState={gameState}
-                            playerId={session.playerId}
+                            playerId={activePlayerId}
                             onClose={() => setActivePanel(null)}
                             onResult={handleResearchResult}
                         />
@@ -158,7 +183,7 @@ export default function GamePage({ session }: Props) {
                     {activePanel === "action" && selectedCountry && (
                         <ActionPanel
                             gameState={gameState}
-                            playerId={session.playerId}
+                            playerId={activePlayerId}
                             selectedCountry={selectedCountry}
                             onClose={() => { setActivePanel(null); setSelectedCountry(null); }}
                             onResult={handleActionResult}
@@ -172,7 +197,7 @@ export default function GamePage({ session }: Props) {
                     <div className="game-id-display">Game ID: <code>{gameId}</code></div>
                     <EuropeMap
                         gameState={gameState}
-                        playerId={session.playerId}
+                        playerId={activePlayerId}
                         onCountryClick={handleCountryClick}
                     />
                 </main>

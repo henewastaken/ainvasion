@@ -50,9 +50,9 @@ export default function ActionPanel({
 
             onResult(res.story, res.itemsFound);
             onClose();
-        } catch (e: unknown) {
-            const msg = e instanceof Error ? e.message : "Action failed.";
-            setError(msg);
+        } catch (error) {
+            const errorMessage = error instanceof Error ? error.message : "Action failed.";
+            setError(errorMessage);
         } finally {
             setLoading(false);
         }
@@ -60,7 +60,7 @@ export default function ActionPanel({
 
     return (
         <div className="panel action-panel">
-            <button className="close-btn" onClick={onClose}>✕</button>
+            <button className="close-btn" onClick={onClose}>X</button>
             <h3>Target: {selectedCountry}</h3>
             <p>
                 Army: <strong>{target?.armyStrength ?? "?"}</strong> &nbsp;|&nbsp;
@@ -105,7 +105,7 @@ export default function ActionPanel({
                                 onChange={() => toggleItem(item.itemName)}
                             />
                             &nbsp;<strong>{item.itemName}</strong>
-                            <span className="item-effect"> — {item.itemEffect}</span>
+                            <span className="item-effect"> {item.itemEffect}</span>
                             <span className="item-qty"> ×{item.quantity}</span>
                         </label>
                     ))}
@@ -115,7 +115,7 @@ export default function ActionPanel({
             {error && <p className="error">{error}</p>}
 
             <button onClick={handleSubmit} disabled={loading}>
-                {loading ? "Resolving…" : `${attackType === "war" ? "⚔ Attack" : "🤝 Negotiate"}`}
+                {loading ? "Resolving…" : `${attackType === "war" ? "Attack" : "Negotiate"}`}
             </button>
         </div>
     );
