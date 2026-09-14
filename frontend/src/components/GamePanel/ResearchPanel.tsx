@@ -1,5 +1,5 @@
 import { useState } from "react";
-import type { GameState, ResearchResponse, Resource } from "../../types/game";
+import type { GameState, ResearchResponse, Resource, Item } from "../../types/game";
 import { performResearch } from "../../services/api";
 
 interface Props {
@@ -13,12 +13,13 @@ export default function ResearchPanel({ gameState, playerId, onClose, onResult }
     const me = gameState.players.find((player) => player.playerId === playerId)!;
 
     const [item, setItem] = useState("");
+    const [selectedItems, setSelectedItems] = useState<Set<string>>(new Set());
     const [selectedResources, setSelectedResources] = useState<Set<string>>(new Set());
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
 
-    function toggleResource(name: string) {
-        setSelectedResources((prev) => {
+    function toggle(setter: React.Dispatch<React.SetStateAction<Set<string>>>, name: string) {
+        setter((prev) => {
             const next = new Set(prev);
             next.has(name) ? next.delete(name) : next.add(name);
             return next;
@@ -33,13 +34,18 @@ export default function ResearchPanel({ gameState, playerId, onClose, onResult }
             const res: ResearchResponse = await performResearch(gameState.gameId, {
                 playerId: playerId,
                 item: item.trim(),
+                itemsUsed: Array.from(selectedItems),
                 resourcesUsed: Array.from(selectedResources),
             });
-            onResult(`Researched: ${res.researchedItem} — ${res.researchedItem?.itemEffect}`);
+            onResult(
+                res.researchedItem
+                    ? `Researched ${res.researchedItem.itemName} — ${res.researchedItem.itemEffect}`
+                    : res.story || "Research yielded nothing.",
+            );
             onClose();
-        } catch (e: unknown) {
-            const msg = e instanceof Error ? e.message : "Research failed.";
-            setError(msg);
+        } catch (error) {
+            const errorMessage = error instanceof Error ? error.message : "Research failed.";
+            setError(errorMessage);
         } finally {
             setLoading(false);
         }
@@ -47,7 +53,7 @@ export default function ResearchPanel({ gameState, playerId, onClose, onResult }
 
     return (
         <div className="panel research-panel">
-            <button className="close-btn" onClick={onClose}>✕</button>
+            <button className="close-btn" onClick={onClose}>X</button>
             <h3>Research</h3>
             <input
                 type="text"
@@ -58,6 +64,23 @@ export default function ResearchPanel({ gameState, playerId, onClose, onResult }
                 maxLength={80}
             />
 
+            {me.items.length > 0 && (
+                <div className="item-picker">
+                    <p>Aid with items (optional):</p>
+                    {me.items.map((it: Item) => (
+                        <label key={it.itemName} className="item-row">
+                            <input
+                                type="checkbox"
+                                checked={selectedItems.has(it.itemName)}
+                                onChange={() => toggle(setSelectedItems, it.itemName)}
+                            />
+                            &nbsp;<strong>{it.itemName}</strong>
+                            <span className="item-qty"> ×{it.quantity}</span>
+                        </label>
+                    ))}
+                </div>
+            )}
+
             {me.resources.length > 0 && (
                 <div className="item-picker">
                     <p>Aid with resources (optional):</p>
@@ -66,7 +89,7 @@ export default function ResearchPanel({ gameState, playerId, onClose, onResult }
                             <input
                                 type="checkbox"
                                 checked={selectedResources.has(resource.resourceName)}
-                                onChange={() => toggleResource(resource.resourceName)}
+                                onChange={() => toggle(setSelectedResources, resource.resourceName)}
                             />
                             &nbsp;<strong>{resource.resourceName}</strong>
                             <span className="item-qty"> ×{resource.quantity}</span>
@@ -78,7 +101,7 @@ export default function ResearchPanel({ gameState, playerId, onClose, onResult }
             {error && <p className="error">{error}</p>}
 
             <button onClick={handleSubmit} disabled={loading || !item.trim()}>
-                {loading ? "Researching…" : "🔬 Research"}
+                {loading ? "Researching…" : "Research"}
             </button>
         </div>
     );

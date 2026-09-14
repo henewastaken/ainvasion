@@ -50,21 +50,22 @@ export interface GameState {
 
 export type AttackType = "war" | "diplomatic";
 
-export interface ItemUsed {
-  itemName: string;
-  itemEffect: string;
+export interface ItemOrResourceUsed {
+  itemOrResourceName: string;
+  itemOrResourceEffect: string;
 }
 
 export interface ActionRequest {
   playerId: string;
   target: string;
   attackType: AttackType;
-  itemsUsed: ItemUsed[];
+  itemsOrResourceUsed: ItemOrResourceUsed[];
 }
 
 export interface ResearchRequest {
   playerId: string;
   item: string;
+  itemsUsed: string[];
   resourcesUsed: string[];
 }
 
@@ -108,8 +109,20 @@ export interface WsMessage {
 
 // ── Local session credentials (stored in sessionStorage) ─────────────────────
 
+/** One player controlled from this device in a local ("pass & play") game. */
+export interface LocalPlayer {
+  playerId: string;
+  playerName: string;
+}
+
 export interface SessionCredentials {
   gameId: string;
   playerId: string;
   playerName: string;
+  /**
+   * Present only for local ("pass & play") games: every player sharing this
+   * device, including the host. When set, GamePage acts as whichever of these
+   * players' turn it currently is. Absent for online games.
+   */
+  localPlayers?: LocalPlayer[];
 }

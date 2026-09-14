@@ -19,11 +19,11 @@ export default function JoinGame({ onSession }: Props) {
         setLoading(true);
         setError(null);
         try {
-            const { player_id } = await joinGame(gameId.trim(), name.trim());
+            const { playerId } = await joinGame(gameId.trim(), name.trim());
             const creds: SessionCredentials = {
-                game_id: gameId.trim(),
-                player_id,
-                player_name: name.trim(),
+                gameId: gameId.trim(),
+                playerId,
+                playerName: name.trim(),
             };
             onSession(creds);
             navigate(`/game/${gameId.trim()}`);

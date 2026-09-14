@@ -2,3 +2,4 @@ __pycache__
 # add node_modules
 node_modules/
 .vscode/
+.vite

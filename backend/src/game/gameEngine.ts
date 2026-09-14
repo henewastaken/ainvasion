@@ -1,8 +1,7 @@
 import {
   ActionResponse,
   ResearchResponse,
-  Resource,
-  ItemUsed,
+  ItemOrResourceUsed,
   GameState,
   DiplomacyResponse,
   Player,
@@ -43,7 +42,7 @@ export const applyActionResult = (
   actionResponse: ActionResponse,
   playerId: string,
   targetCountry: string,
-  itemsUsed: ItemUsed[],
+  itemsUsed: ItemOrResourceUsed[],
 ): GameState => {
   const player: Player | undefined = state.players.find(
     (player) => player.playerId === playerId,
@@ -82,7 +81,7 @@ export const applyActionResult = (
   const usageCounts = itemsUsed.reduce<Record<string, number>>(
     (acc, used) => ({
       ...acc,
-      [used.itemName]: (acc[used.itemName] ?? 0) + 1,
+      [used.itemOrResourceName]: (acc[used.itemOrResourceName] ?? 0) + 1,
     }),
     {},
   );
@@ -126,7 +125,7 @@ export const applyDiplomacyResult = (
   diplomacyResponse: DiplomacyResponse,
   playerId: string,
   targetCountry: string,
-  itemsUsed: ItemUsed[],
+  resourcesUsed: string[],
 ): GameState => {
   const player: Player | undefined = state.players.find(
     (p) => p.playerId === playerId,
@@ -150,11 +149,9 @@ export const applyDiplomacyResult = (
       }
     }
   } else {
-    const usageCounts = itemsUsed.reduce<Record<string, number>>(
-      (acc, used) => ({
-        ...acc,
-        [used.itemName]: (acc[used.itemName] ?? 0) + 1,
-      }),
+    // Resources offered are consumed only when the alliance is rejected.
+    const usageCounts = resourcesUsed.reduce<Record<string, number>>(
+      (acc, name) => ({ ...acc, [name]: (acc[name] ?? 0) + 1 }),
       {},
     );
 
@@ -175,6 +172,7 @@ export const applyResearchResult = (
   state: GameState,
   researchResponse: ResearchResponse,
   playerId: string,
+  itemsUsed: string[],
   resourcesUsed: string[],
 ): GameState => {
   const player: Player | undefined = state.players.find(
@@ -185,38 +183,51 @@ export const applyResearchResult = (
     return state;
   }
 
-  // Consume used resources
-  const usageCounts = resourcesUsed.reduce<Record<string, number>>(
-    (acc, name) => ({ ...acc, [name]: (acc[name] ?? 0) + 1 }),
-    {},
-  );
+  // Count spends by name (either list may contain duplicates).
+  const countByName = (names: string[]): Record<string, number> =>
+    names.reduce<Record<string, number>>(
+      (acc, name) => ({ ...acc, [name]: (acc[name] ?? 0) + 1 }),
+      {},
+    );
 
+  // Both items and resources may be spent to aid research; consume each from its
+  // own inventory.
+  const itemCounts = countByName(itemsUsed);
+  player.items = player.items
+    .map((i) => ({
+      ...i,
+      quantity: i.quantity - (itemCounts[i.itemName] ?? 0),
+    }))
+    .filter((i) => i.quantity > 0);
+
+  const resourceCounts = countByName(resourcesUsed);
   player.resources = player.resources
     .map((r) => ({
       ...r,
-      quantity: r.quantity - (usageCounts[r.resourceName] ?? 0),
+      quantity: r.quantity - (resourceCounts[r.resourceName] ?? 0),
     }))
     .filter((r) => r.quantity > 0);
 
-  // Add researched item
-  const newResource: Resource = {
-    resourceName: researchResponse.researchedItem?.resourceName || "",
-    resourceEffect: researchResponse.researchedItem?.resourceEffect || "",
-    quantity: researchResponse.researchedItem?.quantity || 0,
-  };
+  // Research yields an item (used later in battles), not a resource.
+  const researched = researchResponse.researchedItem;
+  if (!researched || !researched.itemName) {
+    state.storyLog.push(researchResponse.story);
+    return state;
+  }
 
-  const existing = player.resources.find(
-    (r) => r.resourceName === newResource.resourceName,
-  );
-
+  const existing = player.items.find((item) => item.itemName === researched.itemName);
   if (existing) {
-    existing.quantity += 1;
+    existing.quantity += researched.quantity || 1;
   } else {
-    player.resources.push(newResource as Resource);
+    player.items.push({
+      itemName: researched.itemName,
+      itemEffect: researched.itemEffect || "",
+      quantity: researched.quantity || 1,
+    });
   }
 
   state.storyLog.push(
-    `${player.name} researched '${researchResponse.researchedItem?.resourceName}' with effect '${researchResponse.researchedItem?.resourceEffect}'`,
+    `${player.name} researched '${researched.itemName}' with effect '${researched.itemEffect}'`,
   );
 
   return state;

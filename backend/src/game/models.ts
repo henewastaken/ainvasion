@@ -8,7 +8,7 @@ export const ResourceSchema = z.object({
 
 export type Resource = z.infer<typeof ResourceSchema>;
 
-const ItemSchema = z.object({
+export const ItemSchema = z.object({
   itemName: z.string(),
   itemEffect: z.string(),
   quantity: z.number().default(1),
@@ -55,18 +55,20 @@ export const GameStateSchema = z.object({
 
 export type GameState = z.infer<typeof GameStateSchema>;
 
-export const ItemUsedSchema = z.object({
-  itemName: z.string(),
-  itemEffect: z.string(),
+// War spends items, diplomacy spends resources, but both travel over the wire as
+// this generic "name + effect" pair.
+export const ItemOrResourceUsedSchema = z.object({
+  itemOrResourceName: z.string(),
+  itemOrResourceEffect: z.string(),
 });
 
-export type ItemUsed = z.infer<typeof ItemUsedSchema>;
+export type ItemOrResourceUsed = z.infer<typeof ItemOrResourceUsedSchema>;
 
 export const ActionRequestSchema = z.object({
   playerId: z.string(),
   target: z.string(),
   attackType: z.enum(["war", "diplomatic"]),
-  itemsUsed: z.array(ItemUsedSchema).default([]),
+  itemsOrResourceUsed: z.array(ItemOrResourceUsedSchema).default([]),
 });
 
 export type ActionRequest = z.infer<typeof ActionRequestSchema>;
@@ -74,6 +76,9 @@ export type ActionRequest = z.infer<typeof ActionRequestSchema>;
 export const ResearchRequestSchema = z.object({
   playerId: z.string(),
   item: z.string(),
+  // Research can be boosted with both items and resources; each is a list of
+  // inventory names the player chose to spend.
+  itemsUsed: z.array(z.string()).default([]),
   resourcesUsed: z.array(z.string()).default([]),
 });
 
@@ -99,7 +104,9 @@ export type DiplomacyResponse = z.infer<typeof DiplomacyResponseSchema>;
 export const ResearchResponseSchema = z.object({
   success: z.boolean(),
   story: z.string(),
-  researchedItem: ResourceSchema.nullable(),
+  itemsUsed: z.array(ItemSchema).default([]),
+  resourcesUsed: z.array(ResourceSchema).default([]),
+  researchedItem: ItemSchema.nullable(),
 });
 
 export type ResearchResponse = z.infer<typeof ResearchResponseSchema>;

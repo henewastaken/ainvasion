@@ -76,6 +76,29 @@ export const startGame = async (req: Request, res: Response) => {
     }
   });
 
+  // Seed each player with a starting resource from the countries they own. A
+  // country's favourite resource is its native export. These resources are
+  // spent to aid research or sway diplomacy.
+  for (const player of state.players) {
+    for (const countryName of player.empire) {
+      const favorite = state.countries[countryName]?.favoriteResource;
+      if (!favorite) continue;
+
+      const existing = player.resources.find(
+        (resource) => resource.resourceName === favorite,
+      );
+      if (existing) {
+        existing.quantity += 1;
+      } else {
+        player.resources.push({
+          resourceName: favorite,
+          resourceEffect: `Native resource of ${countryName}. Spend it to aid research or sway diplomacy.`,
+          quantity: 1,
+        });
+      }
+    }
+  }
+
   state.status = "active";
   updateState(gameId, state);
   broadcastGameStarted(gameId);
