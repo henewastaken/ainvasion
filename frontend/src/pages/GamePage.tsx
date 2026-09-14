@@ -55,8 +55,10 @@ export default function GamePage({ session }: Props) {
     );
 
     function handleCountryClick(countryName: string) {
+        console.log("Clicked country:", countryName);
         setSelectedCountry(countryName);
         setActivePanel("action");
+
     }
 
     function handleActionResult(story: string, newItems: Item[]) {

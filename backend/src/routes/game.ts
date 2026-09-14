@@ -21,6 +21,7 @@ import {
   resolveDiplomacy,
   resolveResearch,
 } from "../ai/llmClient";
+import { broadcastState, broadcastGameOver } from "../ws/wsServer";
 
 export const gameRoutes = Router();
 
@@ -185,6 +186,11 @@ export const performAction = async (req: Request, res: Response) => {
   }
 
   updateState(gameId, newState);
+  if (winner) {
+    broadcastGameOver(gameId);
+  } else {
+    broadcastState(gameId);
+  }
   res.json(response);
 };
 
@@ -252,6 +258,7 @@ export const performResearch = async (req: Request, res: Response) => {
 
   advanceTurn(newState);
   updateState(gameId, newState);
+  broadcastState(gameId);
   res.json(researchResponse);
 };
 

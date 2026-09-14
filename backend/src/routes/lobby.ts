@@ -7,6 +7,7 @@ import {
   updateState,
 } from "../game/stateManager";
 import { generateCountryResources } from "../ai/llmClient";
+import { broadcastState, broadcastGameStarted } from "../ws/wsServer";
 
 export const lobbyRoutes = Router();
 
@@ -40,6 +41,8 @@ export const joinGame = async (req: Request, res: Response) => {
     return;
   }
 
+  // Let existing subscribers see the new player in the lobby.
+  broadcastState(gameId);
   res.json({ playerId: playerId });
 };
 
@@ -75,6 +78,7 @@ export const startGame = async (req: Request, res: Response) => {
 
   state.status = "active";
   updateState(gameId, state);
+  broadcastGameStarted(gameId);
   res.json({ status: "started" });
 };
 

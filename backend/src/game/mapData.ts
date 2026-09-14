@@ -11,7 +11,7 @@ export const mapData = {
     hatedResource: null,
   },
   Spain: {
-    armyStrength: 110,
+    armyStrength: 1110,
     morale: 75,
     adjacency: ["Portugal", "France"],
     favoriteResource: null,
