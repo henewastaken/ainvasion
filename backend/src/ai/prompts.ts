@@ -1,6 +1,5 @@
 // Prompt templates used when calling the LLM.
-
-import { Country, Resource } from "../game/models";
+import { Country, Item, Resource } from "../game/models";
 
 export const generateResourcesPrompt = (countries: string[]) => {
   return `
@@ -36,8 +35,8 @@ export const resolveAttackPrompt = (
   return `
     You are narrating a turn-based world domination game set in Europe.
     A player is attacking a country.
-    Provide a short narrative of the event, and if any items were found in the target country or during the battle, include them in the response.
-    The story can be as random or weird as you like.
+    Provide a short narrative (4-5-sentences) of the event, and if any items were found in the target country or during the battle, include them in the response.
+    The story can be as random or weird as you like, and weirder stories are more preferred than serious.
     Every response doesn't need to include items, but if you do, include at most two items.
     You can give the items to the defending country, or to the attacker, or both.
     Items can have whatever effect you want.
@@ -92,7 +91,7 @@ export const resolveDiplomacyPrompt = (
     Target country hated resource: ${targetCountry.hatedResource} 
     The player can give items and resources to the target country to try to influence their decision, but the outcome is ultimately up to you. 
     But if the player is trying to give a resource to the target country that the target country hates, it will decrease the chance of success. If the player is trying to give a resource that the target country loves, it will increase the chance of success.
-    Provide a short narrative of the event, and if any items were found in the target country or during the battle, include them in the response.
+    Provide a short narrative of the event (4-5-sentences), and if any items were found in the target country or during the alliance negotiations, include them in the response.
     The story can be as random or weird as you like.
     You must respond ONLY in valid JSON and nothing else. Not single word, only JSON
     The outcome can be as random or weird as you like, the following factors are only guidelines, not rules:
@@ -105,7 +104,7 @@ export const resolveDiplomacyPrompt = (
 
     Respond ONLY in valid JSON, NOT a single word, and nothing else. The JSON format is:
     {
-      "success": true or false,
+      "success": true or false (must match the outcome of the battle and the story),
       "story": "<short narrative of the event>",
       "foundItems": [
         {"itemName": "<name>", "itemEffect": "<short mechanical effect>", "quantity": <how many found, usually 1-2 but small chance of 3-5>}
@@ -117,6 +116,7 @@ export const resolveDiplomacyPrompt = (
 export const resolveResearchPrompt = (
   playerName: string,
   item: string,
+  itemsUsed: Item[],
   resourcesUsed: Resource[],
 ) => {
   return `
@@ -124,13 +124,15 @@ export const resolveResearchPrompt = (
 
     Player: ${playerName}
     Research target: ${item}
+    Items used to aid research: ${JSON.stringify(itemsUsed)}
     Resources used to aid research: ${JSON.stringify(resourcesUsed)}
 
     Describe what was researched and give it effects.
+    The items and resources the player spent should improve the chance of success and can shape the researched item's effects.
     You determine the outcome of the research.
     The outcome can be as random or weird as you like, the following factors are only guidelines, not rules:
     - The resources used may influence the outcome, but the outcome is ultimately up to you.
-    - No items like "beer that when you drink it you become invincible" or "magic wand that grants eternal life" are allowed. The item must be reasonable and thematic for a world domination game but can be bery weird and have strange and funny effects, or be serious, agai you decide.
+    - No items like "beer that when you drink it you become invincible" or "magic wand that grants eternal life" are allowed  (this is not a guideline, this is a hard rule). The item must be reasonable and thematic for a world domination game but can be very weird and have strange and funny effects, or be serious, again you decide.
     - Research can be new item, new resource or new technology. You may slightly modify the item name to make it more thematic but if you change the name include the reason for change in the story, i.e. make up a story why the name was changed.
     - The researches should mostly be succesful, but you can make some fail if you wish. .
 
@@ -138,7 +140,7 @@ export const resolveResearchPrompt = (
 
     Respond ONLY in valid JSON, NOT a single word, and nothing else. The JSON format is:
     {
-      "success": true or false,
+      "success": true or false (must match the outcome of the battle and the story),
       "story": "<short narrative of the research>",
       "researchedItem":
         {"itemName": "<name>", "itemEffect": "<short mechanical effect>", "quantity": 1}

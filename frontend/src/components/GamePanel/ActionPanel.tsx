@@ -1,6 +1,10 @@
 import { useState } from "react";
-import type { GameState, AttackType, Item, ItemUsed } from "../../types/game";
+import type { GameState, AttackType, Item, ItemOrResourceUsed } from "../../types/game";
 import { performAction } from "../../services/api";
+
+// War spends items; diplomacy spends resources. Both are sent to the backend as
+// the generic `itemsUsed` list (name + effect), so we normalise to that shape.
+type Spendable = { name: string; effect: string; quantity: number };
 
 interface Props {
     gameState: GameState;
@@ -25,27 +29,39 @@ export default function ActionPanel({
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
 
-    function toggleItem(itemName: string) {
+    // The things the player can spend depend on the action: items for war,
+    // resources for diplomacy.
+    const spendable: Spendable[] =
+        attackType === "war"
+            ? me.items.map((i) => ({ name: i.itemName, effect: i.itemEffect, quantity: i.quantity }))
+            : me.resources.map((r) => ({ name: r.resourceName, effect: r.resourceEffect, quantity: r.quantity }));
+
+    function toggleItem(name: string) {
         setSelectedItems((prev) => {
             const next = new Set(prev);
-            next.has(itemName) ? next.delete(itemName) : next.add(itemName);
+            next.has(name) ? next.delete(name) : next.add(name);
             return next;
         });
+    }
+
+    function selectAttackType(type: AttackType) {
+        setAttackType(type);
+        setSelectedItems(new Set()); // item and resource pools don't overlap
     }
 
     async function handleSubmit() {
         setLoading(true);
         setError(null);
         try {
-            const items: ItemUsed[] = me.items
-                .filter((item) => selectedItems.has(item.itemName))
-                .map((item) => ({ itemName: item.itemName, itemEffect: item.itemEffect }));
+            const itemOrResource: ItemOrResourceUsed[] = spendable
+                .filter((s) => selectedItems.has(s.name))
+                .map((s) => ({ itemOrResourceName: s.name, itemOrResourceEffect: s.effect }));
 
             const res = await performAction(gameState.gameId, {
                 playerId: playerId,
                 target: selectedCountry,
                 attackType: attackType,
-                itemsUsed: items,
+                itemsOrResourceUsed: itemOrResource,
             });
 
             onResult(res.story, res.itemsFound);
@@ -79,7 +95,7 @@ export default function ActionPanel({
                         type="radio"
                         value="war"
                         checked={attackType === "war"}
-                        onChange={() => setAttackType("war")}
+                        onChange={() => selectAttackType("war")}
                     />
                     &nbsp;War
                 </label>
@@ -88,25 +104,31 @@ export default function ActionPanel({
                         type="radio"
                         value="diplomatic"
                         checked={attackType === "diplomatic"}
-                        onChange={() => setAttackType("diplomatic")}
+                        onChange={() => selectAttackType("diplomatic")}
                     />
                     &nbsp;Diplomatic
                 </label>
             </div>
 
-            {me.items.length > 0 && (
+            {spendable.length > 0 && (
                 <div className="item-picker">
-                    <p>Use items (optional):</p>
-                    {me.items.map((item) => (
-                        <label key={item.itemName} className="item-row">
+                    <p>{attackType === "war" ? "Use items:" : "Offer resources:"}</p>
+                    {spendable.map((s) => (
+                        <label key={s.name} className="item-row">
                             <input
                                 type="checkbox"
-                                checked={selectedItems.has(item.itemName)}
-                                onChange={() => toggleItem(item.itemName)}
+                                checked={selectedItems.has(s.name)}
+                                onChange={() => toggleItem(s.name)}
                             />
+<<<<<<< Updated upstream
                             &nbsp;<strong>{item.itemName}</strong>
                             <span className="item-effect"> {item.itemEffect}</span>
                             <span className="item-qty"> ×{item.quantity}</span>
+=======
+                            &nbsp;<strong>{s.name}</strong>
+                            <span className="item-effect"> {s.effect}</span>
+                            <span className="item-qty"> ×{s.quantity}</span>
+>>>>>>> Stashed changes
                         </label>
                     ))}
                 </div>

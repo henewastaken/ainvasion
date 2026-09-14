@@ -6,6 +6,7 @@ import EuropeMap from "../components/Map/EuropeMap";
 import ActionPanel from "../components/GamePanel/ActionPanel";
 import ResearchPanel from "../components/GamePanel/ResearchPanel";
 import ResourcePanel from "../components/GamePanel/ResourcePanel";
+import ItemPanel from "../components/GamePanel/ItemPanel";
 import StoryPanel from "../components/GamePanel/StoryPanel";
 import type { GameState, Item, SessionCredentials, WsMessage } from "../types/game";
 
@@ -147,7 +148,16 @@ export default function GamePage({ session }: Props) {
             <div className="game-layout">
                 {/* ── Left sidebar ── */}
                 <aside className="sidebar left">
+<<<<<<< Updated upstream
                     <ResourcePanel gameState={gameState} playerId={activePlayerId} />
+=======
+<<<<<<< Updated upstream
+                    <ResourcePanel gameState={gameState} playerId={session.playerId} />
+=======
+                    <ResourcePanel gameState={gameState} playerId={activePlayerId} />
+                    <ItemPanel gameState={gameState} playerId={activePlayerId} />
+>>>>>>> Stashed changes
+>>>>>>> Stashed changes
 
                     {gameState.status === "pending" && isCreator && (
                         <button

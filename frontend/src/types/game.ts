@@ -50,21 +50,22 @@ export interface GameState {
 
 export type AttackType = "war" | "diplomatic";
 
-export interface ItemUsed {
-  itemName: string;
-  itemEffect: string;
+export interface ItemOrResourceUsed {
+  itemOrResourceName: string;
+  itemOrResourceEffect: string;
 }
 
 export interface ActionRequest {
   playerId: string;
   target: string;
   attackType: AttackType;
-  itemsUsed: ItemUsed[];
+  itemsOrResourceUsed: ItemOrResourceUsed[];
 }
 
 export interface ResearchRequest {
   playerId: string;
   item: string;
+  itemsUsed: string[];
   resourcesUsed: string[];
 }
 
