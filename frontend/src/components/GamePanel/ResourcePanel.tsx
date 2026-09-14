@@ -1,4 +1,4 @@
-import type { GameState, Resource } from "../../types/game";
+import type { GameState, Resource, Player } from "../../types/types";
 import { PLAYER_COLORS } from "../../data/colors";
 
 interface Props {
@@ -7,7 +7,7 @@ interface Props {
 }
 
 export default function ResourcePanel({ gameState, playerId }: Props) {
-    const me = gameState.players.find((player) => player.playerId === playerId);
+    const me = gameState.players.find((player: Player) => player.playerId === playerId);
     if (!me) return null;
 
     return (
@@ -31,8 +31,8 @@ export default function ResourcePanel({ gameState, playerId }: Props) {
             <hr />
             <h3>Players</h3>
             <ul>
-                {gameState.players.map((player, idx) => (
-                    <li key={player.playerId} style={{ color: PLAYER_COLORS[idx % PLAYER_COLORS.length] }}>
+                {gameState.players.map((player: Player, index: number) => (
+                    <li key={player.playerId} style={{ color: PLAYER_COLORS[index % PLAYER_COLORS.length] }}>
                         <strong>{player.name}</strong>
                         {player.playerId === playerId && " (you)"}
                         {gameState.currentTurnPlayerId === player.playerId && " turn"}

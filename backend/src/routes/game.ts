@@ -12,8 +12,11 @@ import {
   ActionRequest,
   Country,
   GameState,
+  Item,
+  ItemOrResourceUsed,
   Player,
   ResearchRequest,
+  Resource,
 } from "../game/models";
 import { startCountries } from "../game/mapData";
 import {
@@ -75,7 +78,7 @@ export const performAction = async (req: Request, res: Response) => {
   }
 
   const player: Player | undefined = state.players.find(
-    (player) => player.playerId === body.playerId,
+    (player: Player) => player.playerId === body.playerId,
   );
 
   // Validate the action request
@@ -99,17 +102,17 @@ export const performAction = async (req: Request, res: Response) => {
   // War is fought with items; diplomacy is swayed with resources. Validate the
   // things the player claims to spend against the matching inventory.
   const missingItems = body.itemsOrResourceUsed
-    .map((used) => {
+    .map((usedItem: ItemOrResourceUsed) => {
       const owned =
         body.attackType === "war"
           ? player.items.some(
-              (i) => i.itemName === used.itemOrResourceName && i.quantity > 0,
+              (item: Item) => item.itemName === usedItem.itemOrResourceName && item.quantity > 0,
             )
           : player.resources.some(
-              (r) =>
-                r.resourceName === used.itemOrResourceName && r.quantity > 0,
+              (resource: Resource) =>
+                resource.resourceName === usedItem.itemOrResourceName && resource.quantity > 0,
             );
-      return owned ? null : used.itemOrResourceName;
+      return owned ? null : usedItem.itemOrResourceName;
     })
     .filter(Boolean);
 
@@ -120,14 +123,16 @@ export const performAction = async (req: Request, res: Response) => {
     return;
   }
 
-  // Get the target country story history, items, and prepare for action resolution
+  // Get the target country story history, resources, and prepare for action resolution
   const target: Country = state.countries[body.target];
   const storyContext = state.storyLog.slice(-3).join(" ");
-  const mappedItems = body.itemsOrResourceUsed.map((used) => ({
-    resourceName: used.itemOrResourceName,
-    resourceEffect: used.itemOrResourceEffect,
-    quantity: 1,
-  }));
+  const mappedResources: Resource[] = body.itemsOrResourceUsed.map(
+    (usedItem: ItemOrResourceUsed) => ({
+      resourceName: usedItem.itemOrResourceName,
+      resourceEffect: usedItem.itemOrResourceEffect,
+      quantity: 1,
+    }),
+  );
 
   player.hasActedThisTurn = true;
 
@@ -140,7 +145,7 @@ export const performAction = async (req: Request, res: Response) => {
       const outcome = await resolveDiplomacy(
         player.empire,
         target,
-        mappedItems,
+        mappedResources,
       );
 
       return {
@@ -150,7 +155,9 @@ export const performAction = async (req: Request, res: Response) => {
           outcome,
           body.playerId,
           body.target,
-          body.itemsOrResourceUsed.map((used) => used.itemOrResourceName),
+          body.itemsOrResourceUsed.map(
+            (usedItem: ItemOrResourceUsed) => usedItem.itemOrResourceName,
+          ),
         ),
       };
     },
@@ -161,7 +168,7 @@ export const performAction = async (req: Request, res: Response) => {
         player.armyStrength,
         player.morale,
         target,
-        mappedItems,
+        mappedResources,
         storyContext,
       );
 
@@ -206,7 +213,7 @@ export const performResearch = async (req: Request, res: Response) => {
     return;
   }
 
-  const player = state.players.find((p) => p.playerId === body.playerId);
+  const player = state.players.find((player: Player) => player.playerId === body.playerId);
   if (!player) {
     res.status(404).json({ error: "Player not found." });
     return;
@@ -218,7 +225,10 @@ export const performResearch = async (req: Request, res: Response) => {
 
   // Validate the spent items and resources against the matching inventories.
   const missingItem = body.itemsUsed.find(
-    (name) => !player.items.some((i) => i.itemName === name && i.quantity > 0),
+    (itemName: string) =>
+      !player.items.some(
+        (item: Item) => item.itemName === itemName && item.quantity > 0,
+      ),
   );
   if (missingItem) {
     res.status(400).json({ error: `Item not in inventory: ${missingItem}` });
@@ -226,8 +236,11 @@ export const performResearch = async (req: Request, res: Response) => {
   }
 
   const missingResource = body.resourcesUsed.find(
-    (name) =>
-      !player.resources.some((r) => r.resourceName === name && r.quantity > 0),
+    (resourceName: string) =>
+      !player.resources.some(
+        (resource: Resource) =>
+          resource.resourceName === resourceName && resource.quantity > 0,
+      ),
   );
   if (missingResource) {
     res
@@ -237,19 +250,21 @@ export const performResearch = async (req: Request, res: Response) => {
   }
 
   // Resolve the spent names to their full inventory entries for the LLM.
-  const itemsUsed = body.itemsUsed.map((name) => {
-    const item = player.items.find((i) => i.itemName === name);
+  const itemsUsed = body.itemsUsed.map((itemName: string) => {
+    const item = player.items.find((item: Item) => item.itemName === itemName);
     return {
-      itemName: item?.itemName ?? name,
+      itemName: item?.itemName ?? itemName,
       itemEffect: item?.itemEffect ?? "",
       quantity: 1,
     };
   });
 
-  const resourcesUsed = body.resourcesUsed.map((name) => {
-    const resource = player.resources.find((r) => r.resourceName === name);
+  const resourcesUsed = body.resourcesUsed.map((resourceName: string) => {
+    const resource = player.resources.find(
+      (resource: Resource) => resource.resourceName === resourceName,
+    );
     return {
-      resourceName: resource?.resourceName ?? name,
+      resourceName: resource?.resourceName ?? resourceName,
       resourceEffect: resource?.resourceEffect ?? "",
       quantity: 1,
     };

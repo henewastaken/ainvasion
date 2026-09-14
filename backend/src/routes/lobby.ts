@@ -7,6 +7,7 @@ import {
   updateState,
 } from "../game/stateManager";
 import { generateCountryResources } from "../ai/llmClient";
+import { Resource } from "../game/models";
 import { broadcastState, broadcastGameStarted } from "../ws/wsServer";
 
 export const lobbyRoutes = Router();
@@ -66,13 +67,15 @@ export const startGame = async (req: Request, res: Response) => {
 
   // Generate resources for all countries via AI
   const resources = await generateCountryResources(
-    Object.fromEntries(Object.keys(state.countries).map((name) => [name, {}])),
+    Object.fromEntries(
+      Object.keys(state.countries).map((countryName: string) => [countryName, {}]),
+    ),
   );
 
-  Object.entries(resources).map(([countryName, res]) => {
+  Object.entries(resources).map(([countryName, countryData]) => {
     if (state.countries[countryName]) {
-      state.countries[countryName].favoriteResource = res.favoriteResource;
-      state.countries[countryName].hatedResource = res.hatedResource;
+      state.countries[countryName].favoriteResource = countryData.favoriteResource;
+      state.countries[countryName].hatedResource = countryData.hatedResource;
     }
   });
 
@@ -85,7 +88,7 @@ export const startGame = async (req: Request, res: Response) => {
       if (!favorite) continue;
 
       const existing = player.resources.find(
-        (resource) => resource.resourceName === favorite,
+        (resource: Resource) => resource.resourceName === favorite,
       );
       if (existing) {
         existing.quantity += 1;

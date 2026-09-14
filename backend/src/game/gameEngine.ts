@@ -6,6 +6,8 @@ import {
   DiplomacyResponse,
   Player,
   Country,
+  Item,
+  Resource,
 } from "../game/models";
 
 // Returns all countries bordering the player's empire that they don't already own.
@@ -18,8 +20,8 @@ export const getEmpireBorders = (
   return [
     ...new Set(
       player.empire
-        .flatMap((name) => state.countries[name]?.adjacency ?? [])
-        .filter((name) => !owned.has(name)),
+        .flatMap((countryName: string) => state.countries[countryName]?.adjacency ?? [])
+        .filter((countryName: string) => !owned.has(countryName)),
     ),
   ];
 };
@@ -30,7 +32,7 @@ export const isAdjacent = (
   playerId: string,
   targetCountry: string,
 ): boolean => {
-  const player = state.players.find((p) => p.playerId === playerId);
+  const player = state.players.find((player: Player) => player.playerId === playerId);
   if (!player) return false;
 
   return getEmpireBorders(state, player).includes(targetCountry);
@@ -45,7 +47,7 @@ export const applyActionResult = (
   itemsUsed: ItemOrResourceUsed[],
 ): GameState => {
   const player: Player | undefined = state.players.find(
-    (player) => player.playerId === playerId,
+    (player: Player) => player.playerId === playerId,
   );
 
   const target: Country = state.countries[targetCountry];
@@ -66,12 +68,12 @@ export const applyActionResult = (
     // Remove from previous owner's empire
     if (prevOwnerId && prevOwnerId !== playerId) {
       const prevOwner = state.players.find(
-        (player) => player.playerId === prevOwnerId,
+        (player: Player) => player.playerId === prevOwnerId,
       );
 
       if (prevOwner) {
         prevOwner.empire = prevOwner.empire.filter(
-          (country) => country !== targetCountry,
+          (country: string) => country !== targetCountry,
         );
       }
     }
@@ -79,31 +81,31 @@ export const applyActionResult = (
 
   // Count how many times each item was used this turn (itemsUsed may contain duplicates)
   const usageCounts = itemsUsed.reduce<Record<string, number>>(
-    (acc, used) => ({
-      ...acc,
-      [used.itemOrResourceName]: (acc[used.itemOrResourceName] ?? 0) + 1,
+    (accumulator: Record<string, number>, usedItem: ItemOrResourceUsed) => ({
+      ...accumulator,
+      [usedItem.itemOrResourceName]: (accumulator[usedItem.itemOrResourceName] ?? 0) + 1,
     }),
     {},
   );
   // Deduct used quantities and drop fully-consumed items
   player.items = player.items
-    .map((item) => ({
+    .map((item: Item) => ({
       ...item,
       quantity: item.quantity - (usageCounts[item.itemName] ?? 0),
     }))
-    .filter((item) => item.quantity > 0);
+    .filter((item: Item) => item.quantity > 0);
 
   // Merge items found from the action result into the player's inventory.
   player.items = actionResponse.itemsFound.reduce(
-    (inventory, found) => {
+    (inventory: Item[], found: Item) => {
       // Check if the player already has this item type
       const alreadyOwned = inventory.some(
-        (item) => item.itemName === found.itemName,
+        (item: Item) => item.itemName === found.itemName,
       );
 
       if (alreadyOwned) {
         // Item exists: add the found quantity to the existing stack
-        return inventory.map((item) =>
+        return inventory.map((item: Item) =>
           item.itemName === found.itemName
             ? { ...item, quantity: item.quantity + found.quantity }
             : item,
@@ -128,7 +130,7 @@ export const applyDiplomacyResult = (
   resourcesUsed: string[],
 ): GameState => {
   const player: Player | undefined = state.players.find(
-    (p) => p.playerId === playerId,
+    (player: Player) => player.playerId === playerId,
   );
 
   const target: Country = state.countries[targetCountry];
@@ -142,25 +144,28 @@ export const applyDiplomacyResult = (
     player.empire.push(targetCountry);
 
     if (prevOwnerId && prevOwnerId !== playerId) {
-      const prevOwner = state.players.find((p) => p.playerId === prevOwnerId);
+      const prevOwner = state.players.find((player: Player) => player.playerId === prevOwnerId);
 
       if (prevOwner) {
-        prevOwner.empire = prevOwner.empire.filter((c) => c !== targetCountry);
+        prevOwner.empire = prevOwner.empire.filter((country: string) => country !== targetCountry);
       }
     }
   } else {
     // Resources offered are consumed only when the alliance is rejected.
     const usageCounts = resourcesUsed.reduce<Record<string, number>>(
-      (acc, name) => ({ ...acc, [name]: (acc[name] ?? 0) + 1 }),
+      (accumulator: Record<string, number>, resourceName: string) => ({
+        ...accumulator,
+        [resourceName]: (accumulator[resourceName] ?? 0) + 1,
+      }),
       {},
     );
 
     player.resources = player.resources
-      .map((r) => ({
-        ...r,
-        quantity: r.quantity - (usageCounts[r.resourceName] ?? 0),
+      .map((resource: Resource) => ({
+        ...resource,
+        quantity: resource.quantity - (usageCounts[resource.resourceName] ?? 0),
       }))
-      .filter((r) => r.quantity > 0);
+      .filter((resource: Resource) => resource.quantity > 0);
   }
 
   state.storyLog.push(diplomacyResponse.story);
@@ -176,7 +181,7 @@ export const applyResearchResult = (
   resourcesUsed: string[],
 ): GameState => {
   const player: Player | undefined = state.players.find(
-    (player) => player.playerId === playerId,
+    (player: Player) => player.playerId === playerId,
   );
 
   if (!player) {
@@ -186,7 +191,10 @@ export const applyResearchResult = (
   // Count spends by name (either list may contain duplicates).
   const countByName = (names: string[]): Record<string, number> =>
     names.reduce<Record<string, number>>(
-      (acc, name) => ({ ...acc, [name]: (acc[name] ?? 0) + 1 }),
+      (accumulator: Record<string, number>, name: string) => ({
+        ...accumulator,
+        [name]: (accumulator[name] ?? 0) + 1,
+      }),
       {},
     );
 
@@ -194,19 +202,19 @@ export const applyResearchResult = (
   // own inventory.
   const itemCounts = countByName(itemsUsed);
   player.items = player.items
-    .map((i) => ({
-      ...i,
-      quantity: i.quantity - (itemCounts[i.itemName] ?? 0),
+    .map((item: Item) => ({
+      ...item,
+      quantity: item.quantity - (itemCounts[item.itemName] ?? 0),
     }))
-    .filter((i) => i.quantity > 0);
+    .filter((item: Item) => item.quantity > 0);
 
   const resourceCounts = countByName(resourcesUsed);
   player.resources = player.resources
-    .map((r) => ({
-      ...r,
-      quantity: r.quantity - (resourceCounts[r.resourceName] ?? 0),
+    .map((resource: Resource) => ({
+      ...resource,
+      quantity: resource.quantity - (resourceCounts[resource.resourceName] ?? 0),
     }))
-    .filter((r) => r.quantity > 0);
+    .filter((resource: Resource) => resource.quantity > 0);
 
   // Research yields an item (used later in battles), not a resource.
   const researched = researchResponse.researchedItem;
@@ -215,7 +223,7 @@ export const applyResearchResult = (
     return state;
   }
 
-  const existing = player.items.find((item) => item.itemName === researched.itemName);
+  const existing = player.items.find((item: Item) => item.itemName === researched.itemName);
   if (existing) {
     existing.quantity += researched.quantity || 1;
   } else {
@@ -237,14 +245,14 @@ export const applyResearchResult = (
 export const advanceTurn = (state: GameState): GameState => {
   // Reset acted flag for outgoing player
   const current = state.players.find(
-    (p) => p.playerId === state.currentTurnPlayerId,
+    (player: Player) => player.playerId === state.currentTurnPlayerId,
   );
 
   if (current) current.hasActedThisTurn = false;
 
   const activeIds = state.players
-    .filter((p) => p.empire.length > 0)
-    .map((p) => p.playerId);
+    .filter((player: Player) => player.empire.length > 0)
+    .map((player: Player) => player.playerId);
 
   if (activeIds.length === 0) {
     return state;
@@ -276,7 +284,7 @@ export const checkVictory = (state: GameState): string | null => {
    *   1. All countries are owned by a single player.
    *   2. Only one player still has an empire.
    */
-  const activePlayers = state.players.filter((p) => p.empire.length > 0);
+  const activePlayers = state.players.filter((player: Player) => player.empire.length > 0);
 
   // "Last player standing" only applies in multiplayer — in solo play, win by owning all countries
   if (state.players.length > 1 && activePlayers.length === 1) {
@@ -285,12 +293,12 @@ export const checkVictory = (state: GameState): string | null => {
 
   const owners = new Set(
     Object.values(state.countries)
-      .map((c) => c.ownerId)
-      .filter((id) => id !== null),
+      .map((country: Country) => country.ownerId)
+      .filter((ownerId: string | null) => ownerId !== null),
   );
 
   const neutral = Object.values(state.countries).filter(
-    (c) => c.ownerId === null,
+    (country: Country) => country.ownerId === null,
   );
 
   if (neutral.length === 0 && owners.size === 1) {

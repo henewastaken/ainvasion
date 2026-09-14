@@ -1,8 +1,8 @@
 import { useState, useRef, useEffect } from "react";
 import type { CSSProperties, PointerEvent as ReactPointerEvent } from "react";
 import { geoAzimuthalEqualArea, geoPath } from "d3-geo";
-import type { FeatureCollection, Geometry } from "geojson";
-import type { GameState, Player } from "../../types/game";
+import type { Feature, FeatureCollection, Geometry } from "geojson";
+import type { GameState, Player } from "../../types/types";
 import { PLAYER_COLORS, NEUTRAL_COLOR, ADJACENT_HIGHLIGHT } from "../../data/colors";
 import europeGeo from "../../data/europe.geo.json";
 
@@ -28,7 +28,9 @@ const PADDING = 14;
 // clipExtent below — that clip falls around the Urals, which is the intent.
 const fitTarget: FeatureCollection<Geometry, CountryProps> = {
     type: "FeatureCollection",
-    features: COUNTRIES.features.filter((f) => f.properties.id !== "Russia"),
+    features: COUNTRIES.features.filter(
+        (feature: Feature<Geometry, CountryProps>) => feature.properties.id !== "Russia",
+    ),
 };
 
 // geoAzimuthalEqualArea centred on (10°E, 52°N) is the EU-standard ETRS-LAEA
@@ -64,7 +66,7 @@ interface Shape {
 const LABEL_AREA_THRESHOLD = 130;
 
 const SHAPES: Shape[] = COUNTRIES.features
-    .map((feature): Shape | null => {
+    .map((feature: Feature<Geometry, CountryProps>): Shape | null => {
         const d = pathGen(feature);
         if (!d) return null;
         const [cx, cy] = pathGen.centroid(feature);
@@ -82,7 +84,7 @@ const SHAPES: Shape[] = COUNTRIES.features
                 Number.isFinite(cy),
         };
     })
-    .filter((s): s is Shape => s !== null);
+    .filter((shape: Shape | null): shape is Shape => shape !== null);
 
 // ── Colours ──────────────────────────────────────────────────────────────────
 const BORDER = "#2c2c2c";
@@ -156,7 +158,7 @@ const zoomBtnStyle: CSSProperties = {
 /** Player index (for colour lookup) given an owner id, or -1 if unowned. */
 function playerIndex(state: GameState, ownerId: string | null): number {
     if (!ownerId) return -1;
-    return state.players.findIndex((player) => player.playerId === ownerId);
+    return state.players.findIndex((player: Player) => player.playerId === ownerId);
 }
 
 /** Countries adjacent to the player's empire that they don't already own. */
@@ -258,7 +260,7 @@ export default function EuropeMap({ gameState, playerId, onCountryClick }: Props
     const zoomAtCentre = (factor: number) =>
         setView((v) => zoomAbout(v, factor, v.x + v.w / 2, v.y + v.h / 2));
 
-    const me = gameState.players.find((player) => player.playerId === playerId);
+    const me = gameState.players.find((player: Player) => player.playerId === playerId);
     const isMyTurn =
         gameState.currentTurnPlayerId === playerId &&
         gameState.status === "active" &&
@@ -279,12 +281,12 @@ export default function EuropeMap({ gameState, playerId, onCountryClick }: Props
         const country = gameState.countries[shape.id];
         if (!country) return shape.name; // in the map but not (yet) in play
         if (!country.ownerId) return `${shape.name} neutral (${country.armyStrength})`;
-        const owner = gameState.players.find((player) => player.playerId === country.ownerId);
+        const owner = gameState.players.find((player: Player) => player.playerId === country.ownerId);
         return `${shape.name} ${owner?.name ?? "?"} (${country.armyStrength})`;
     };
 
     const hovered = hoveredId
-        ? (SHAPES.find((shape) => shape.id === hoveredId) ?? null)
+        ? (SHAPES.find((shape: Shape) => shape.id === hoveredId) ?? null)
         : null;
 
     return (
@@ -319,7 +321,7 @@ export default function EuropeMap({ gameState, playerId, onCountryClick }: Props
                 onPointerLeave={endPan}
             >
                 {/* Country shapes */}
-                {SHAPES.map((shape) => {
+                {SHAPES.map((shape: Shape) => {
                     const clickable = isMyTurn && adjacent.has(shape.id);
                     const isHovered = hoveredId === shape.id;
                     return (
@@ -364,7 +366,7 @@ export default function EuropeMap({ gameState, playerId, onCountryClick }: Props
                 )}
 
                 {/* Labels: country code, plus army strength for countries currently in play */}
-                {SHAPES.filter((s) => s.labelled).map((shape) => {
+                {SHAPES.filter((shape: Shape) => shape.labelled).map((shape: Shape) => {
                     const country = gameState.countries[shape.id];
                     return (
                         <g key={`label-${shape.id}`} style={{ pointerEvents: "none" }}>

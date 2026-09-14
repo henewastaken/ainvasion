@@ -8,7 +8,7 @@ import ResearchPanel from "../components/GamePanel/ResearchPanel";
 import ResourcePanel from "../components/GamePanel/ResourcePanel";
 import ItemPanel from "../components/GamePanel/ItemPanel";
 import StoryPanel from "../components/GamePanel/StoryPanel";
-import type { GameState, Item, SessionCredentials, WsMessage } from "../types/game";
+import type { GameState, Item, SessionCredentials, WsMessage, Player } from "../types/types";
 
 interface Props {
     session: SessionCredentials | null;
@@ -50,7 +50,7 @@ export default function GamePage({ session }: Props) {
         }
 
         if (msg.type === "game_over") {
-            const winner = msg.state?.players.find((player) => player.playerId === msg.winnerId);
+            const winner = msg.state?.players.find((player: Player) => player.playerId === msg.winnerId);
             setStatusMsg(`Game over! ${winner?.name ?? "Someone"} has conquered Europe!`);
         }
     }, []);
@@ -73,7 +73,7 @@ export default function GamePage({ session }: Props) {
         setStatusMsg(story);
 
         if (newItems.length > 0) {
-            setStatusMsg((prev) => prev + ` (Found: ${newItems.map((item) => item.itemName).join(", ")})`);
+            setStatusMsg((prev) => prev + ` (Found: ${newItems.map((item: Item) => item.itemName).join(", ")})`);
         }
 
         setSelectedCountry(null);
@@ -111,7 +111,7 @@ export default function GamePage({ session }: Props) {
             ? gameState.currentTurnPlayerId
             : session.playerId;
 
-    const me = gameState.players.find((player) => player.playerId === activePlayerId);
+    const me = gameState.players.find((player: Player) => player.playerId === activePlayerId);
     const isMyTurn =
         gameState.currentTurnPlayerId === activePlayerId &&
         gameState.status === "active" &&
@@ -121,7 +121,7 @@ export default function GamePage({ session }: Props) {
     const isCreator = gameState.creatorId === session.playerId;
 
     const currentPlayerName =
-        gameState.players.find((p) => p.playerId === gameState.currentTurnPlayerId)?.name ?? "?";
+        gameState.players.find((player: Player) => player.playerId === gameState.currentTurnPlayerId)?.name ?? "?";
 
     const turnLabel = isLocal
         ? gameState.status === "active"

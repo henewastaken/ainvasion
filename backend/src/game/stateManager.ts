@@ -15,9 +15,9 @@ export function createSession(creatorName: string): {
   const startCountry = startCountries[0];
 
   const countries: Record<string, Country> = Object.fromEntries(
-    Object.entries(mapData).map(([name, data]) => [
-      name,
-      { name, ownerId: null, ...data },
+    Object.entries(mapData).map(([countryName, countryData]) => [
+      countryName,
+      { name: countryName, ownerId: null, ...countryData },
     ]),
   );
 

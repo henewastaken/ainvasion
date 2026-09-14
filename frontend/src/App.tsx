@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import LobbyPage from "./pages/LobbyPage";
 import GamePage from "./pages/GamePage";
-import type { SessionCredentials } from "./types/game";
+import type { SessionCredentials } from "./types/types";
 
 const SESSION_KEY = "world_domination_session";
 

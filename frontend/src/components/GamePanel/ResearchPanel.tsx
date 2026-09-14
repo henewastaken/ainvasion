@@ -1,5 +1,5 @@
 import { useState } from "react";
-import type { GameState, ResearchResponse, Resource, Item } from "../../types/game";
+import type { GameState, ResearchResponse, Resource, Item, Player } from "../../types/types";
 import { performResearch } from "../../services/api";
 
 interface Props {
@@ -10,7 +10,7 @@ interface Props {
 }
 
 export default function ResearchPanel({ gameState, playerId, onClose, onResult }: Props) {
-    const me = gameState.players.find((player) => player.playerId === playerId)!;
+    const me = gameState.players.find((player: Player) => player.playerId === playerId)!;
 
     const [item, setItem] = useState("");
     const [selectedItems, setSelectedItems] = useState<Set<string>>(new Set());
@@ -67,15 +67,15 @@ export default function ResearchPanel({ gameState, playerId, onClose, onResult }
             {me.items.length > 0 && (
                 <div className="item-picker">
                     <p>Aid with items (optional):</p>
-                    {me.items.map((it: Item) => (
-                        <label key={it.itemName} className="item-row">
+                    {me.items.map((item: Item) => (
+                        <label key={item.itemName} className="item-row">
                             <input
                                 type="checkbox"
-                                checked={selectedItems.has(it.itemName)}
-                                onChange={() => toggle(setSelectedItems, it.itemName)}
+                                checked={selectedItems.has(item.itemName)}
+                                onChange={() => toggle(setSelectedItems, item.itemName)}
                             />
-                            &nbsp;<strong>{it.itemName}</strong>
-                            <span className="item-qty"> ×{it.quantity}</span>
+                            &nbsp;<strong>{item.itemName}</strong>
+                            <span className="item-qty"> ×{item.quantity}</span>
                         </label>
                     ))}
                 </div>

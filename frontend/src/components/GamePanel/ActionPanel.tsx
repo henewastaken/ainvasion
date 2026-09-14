@@ -1,5 +1,5 @@
 import { useState } from "react";
-import type { GameState, AttackType, Item, ItemOrResourceUsed } from "../../types/game";
+import type { GameState, AttackType, Item, ItemOrResourceUsed, Resource, ActionResponse, Player } from "../../types/types";
 import { performAction } from "../../services/api";
 
 // War spends items; diplomacy spends resources. Both are sent to the backend as
@@ -21,7 +21,7 @@ export default function ActionPanel({
     onClose,
     onResult,
 }: Props) {
-    const me = gameState.players.find((player) => player.playerId === playerId)!;
+    const me = gameState.players.find((player: Player) => player.playerId === playerId)!;
     const target = gameState.countries[selectedCountry];
 
     const [attackType, setAttackType] = useState<AttackType>("war");
@@ -33,8 +33,8 @@ export default function ActionPanel({
     // resources for diplomacy.
     const spendable: Spendable[] =
         attackType === "war"
-            ? me.items.map((i) => ({ name: i.itemName, effect: i.itemEffect, quantity: i.quantity }))
-            : me.resources.map((r) => ({ name: r.resourceName, effect: r.resourceEffect, quantity: r.quantity }));
+            ? me.items.map((item: Item) => ({ name: item.itemName, effect: item.itemEffect, quantity: item.quantity }))
+            : me.resources.map((resource: Resource) => ({ name: resource.resourceName, effect: resource.resourceEffect, quantity: resource.quantity }));
 
     function toggleItem(name: string) {
         setSelectedItems((prev) => {
@@ -54,10 +54,10 @@ export default function ActionPanel({
         setError(null);
         try {
             const itemOrResource: ItemOrResourceUsed[] = spendable
-                .filter((s) => selectedItems.has(s.name))
-                .map((s) => ({ itemOrResourceName: s.name, itemOrResourceEffect: s.effect }));
+                .filter((spendableItem: Spendable) => selectedItems.has(spendableItem.name))
+                .map((spendableItem: Spendable) => ({ itemOrResourceName: spendableItem.name, itemOrResourceEffect: spendableItem.effect }));
 
-            const res = await performAction(gameState.gameId, {
+            const res: ActionResponse = await performAction(gameState.gameId, {
                 playerId: playerId,
                 target: selectedCountry,
                 attackType: attackType,
@@ -113,16 +113,16 @@ export default function ActionPanel({
             {spendable.length > 0 && (
                 <div className="item-picker">
                     <p>{attackType === "war" ? "Use items:" : "Offer resources:"}</p>
-                    {spendable.map((s) => (
-                        <label key={s.name} className="item-row">
+                    {spendable.map((spendableItem: Spendable) => (
+                        <label key={spendableItem.name} className="item-row">
                             <input
                                 type="checkbox"
-                                checked={selectedItems.has(s.name)}
-                                onChange={() => toggleItem(s.name)}
+                                checked={selectedItems.has(spendableItem.name)}
+                                onChange={() => toggleItem(spendableItem.name)}
                             />
-                            &nbsp;<strong>{s.name}</strong>
-                            <span className="item-effect"> {s.effect}</span>
-                            <span className="item-qty"> ×{s.quantity}</span>
+                            &nbsp;<strong>{spendableItem.name}</strong>
+                            <span className="item-effect"> {spendableItem.effect}</span>
+                            <span className="item-qty"> ×{spendableItem.quantity}</span>
                         </label>
                     ))}
                 </div>

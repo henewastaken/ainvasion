@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState, useCallback } from "react";
-import type { GameState, WsMessage } from "../types/game";
+import type { GameState, WsMessage } from "../types/types";
 
 const WS_BASE = (import.meta.env.VITE_WS_URL ?? "ws://localhost:8000") as string;
 const RECONNECT_DELAY_MS = 3000;

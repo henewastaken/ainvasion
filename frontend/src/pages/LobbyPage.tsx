@@ -1,7 +1,7 @@
 import { useState } from "react";
 import CreateGame from "../components/Lobby/CreateGame";
 import JoinGame from "../components/Lobby/JoinGame";
-import type { SessionCredentials } from "../types/game";
+import type { SessionCredentials } from "../types/types";
 
 interface Props {
     onSession: (creds: SessionCredentials) => void;

@@ -1,4 +1,4 @@
-import type { GameState, Item } from "../../types/game";
+import type { GameState, Item, Player } from "../../types/types";
 
 interface Props {
     gameState: GameState;
@@ -8,7 +8,7 @@ interface Props {
 // Items are earned in battle or through research and are spent when waging war.
 // Starting resources live in the separate ResourcePanel.
 export default function ItemPanel({ gameState, playerId }: Props) {
-    const me = gameState.players.find((player) => player.playerId === playerId);
+    const me = gameState.players.find((player: Player) => player.playerId === playerId);
     if (!me) return null;
 
     return (

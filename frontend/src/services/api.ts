@@ -5,7 +5,7 @@ import type {
   ResearchResponse,
   GameState,
   Country,
-} from "../types/game";
+} from "../types/types";
 
 const BASE_URL = import.meta.env.VITE_API_URL ?? "http://localhost:8000";
 

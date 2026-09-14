@@ -18,9 +18,9 @@ export default function StoryPanel({ log }: Props) {
                 <p className="muted">The chronicles are empty. Make your first move.</p>
             ) : (
                 <div className="story-scroll">
-                    {log.map((entry, i) => (
-                        <p key={i} className="story-entry">
-                            <span className="story-num">#{i + 1}</span> {entry}
+                    {log.map((entry: string, index: number) => (
+                        <p key={index} className="story-entry">
+                            <span className="story-num">#{index + 1}</span> {entry}
                         </p>
                     ))}
                     <div ref={bottomRef} />

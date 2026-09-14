@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { joinGame } from "../../services/api";
-import type { SessionCredentials } from "../../types/game";
+import type { SessionCredentials } from "../../types/types";
 
 interface Props {
     onSession: (creds: SessionCredentials) => void;

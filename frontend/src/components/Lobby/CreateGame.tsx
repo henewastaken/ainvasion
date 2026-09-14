@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { createGame, joinGame } from "../../services/api";
-import type { LocalPlayer, SessionCredentials } from "../../types/game";
+import type { LocalPlayer, SessionCredentials } from "../../types/types";
 
 interface Props {
     onSession: (creds: SessionCredentials) => void;
@@ -45,7 +45,7 @@ export default function CreateGame({ onSession }: Props) {
     }
 
     async function handleCreateLocal() {
-        const names = localNames.map((name) => name.trim()).filter(Boolean);
+        const names = localNames.map((name: string) => name.trim()).filter(Boolean);
         if (names.length < 2) {
             setError("Add at least two players for a local game.");
             return;
@@ -80,7 +80,7 @@ export default function CreateGame({ onSession }: Props) {
     }
 
     function updateLocalName(index: number, value: string) {
-        setLocalNames((prev) => prev.map((name, i) => (i === index ? value : name)));
+        setLocalNames((prev) => prev.map((name: string, nameIndex: number) => (nameIndex === index ? value : name)));
     }
 
     function addLocalPlayer() {
@@ -91,7 +91,7 @@ export default function CreateGame({ onSession }: Props) {
 
     function removeLocalPlayer(index: number) {
         setLocalNames((prev) =>
-            prev.length <= 2 ? prev : prev.filter((_, i) => i !== index),
+            prev.length <= 2 ? prev : prev.filter((_, nameIndex: number) => nameIndex !== index),
         );
     }
 
@@ -151,21 +151,21 @@ export default function CreateGame({ onSession }: Props) {
                     <p className="muted">
                         Everyone plays on this device, taking turns. Add each player below.
                     </p>
-                    {localNames.map((playerName, i) => (
-                        <div key={i} className="local-player-row">
+                    {localNames.map((playerName: string, index: number) => (
+                        <div key={index} className="local-player-row">
                             <input
                                 type="text"
-                                placeholder={i === 0 ? "Player 1 (host)" : `Player ${i + 1}`}
+                                placeholder={index === 0 ? "Player 1 (host)" : `Player ${index + 1}`}
                                 value={playerName}
-                                onChange={(e) => updateLocalName(i, e.target.value)}
+                                onChange={(e) => updateLocalName(index, e.target.value)}
                                 maxLength={32}
                             />
                             {localNames.length > 2 && (
                                 <button
                                     type="button"
                                     className="remove-player-btn"
-                                    aria-label={`Remove player ${i + 1}`}
-                                    onClick={() => removeLocalPlayer(i)}
+                                    aria-label={`Remove player ${index + 1}`}
+                                    onClick={() => removeLocalPlayer(index)}
                                 >
                                     X
                                 </button>
@@ -185,7 +185,7 @@ export default function CreateGame({ onSession }: Props) {
                         onClick={handleCreateLocal}
                         disabled={
                             loading ||
-                            localNames.map((name) => name.trim()).filter(Boolean).length < 2
+                            localNames.map((name: string) => name.trim()).filter(Boolean).length < 2
                         }
                     >
                         {loading ? "Creating…" : "Start Local Game"}

@@ -1,7 +1,7 @@
 import type { IncomingMessage, Server } from "http";
 import { WebSocketServer, WebSocket } from "ws";
 import { getSession } from "../game/stateManager";
-import type { GameState } from "../game/models";
+import type { GameState, Player } from "../game/models";
 
 type WsMessageType = "game_started" | "state_update" | "game_over" | "error";
 
@@ -43,7 +43,7 @@ export function attachWebSocketServer(server: Server): void {
         ws.close();
         return;
       }
-      if (!state.players.some((p) => p.playerId === playerId)) {
+      if (!state.players.some((player: Player) => player.playerId === playerId)) {
         send(ws, { type: "error", message: "Player not in this game." });
         ws.close();
         return;
