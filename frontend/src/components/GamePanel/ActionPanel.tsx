@@ -120,15 +120,9 @@ export default function ActionPanel({
                                 checked={selectedItems.has(s.name)}
                                 onChange={() => toggleItem(s.name)}
                             />
-<<<<<<< Updated upstream
-                            &nbsp;<strong>{item.itemName}</strong>
-                            <span className="item-effect"> {item.itemEffect}</span>
-                            <span className="item-qty"> ×{item.quantity}</span>
-=======
                             &nbsp;<strong>{s.name}</strong>
                             <span className="item-effect"> {s.effect}</span>
                             <span className="item-qty"> ×{s.quantity}</span>
->>>>>>> Stashed changes
                         </label>
                     ))}
                 </div>

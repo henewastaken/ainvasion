@@ -148,16 +148,8 @@ export default function GamePage({ session }: Props) {
             <div className="game-layout">
                 {/* ── Left sidebar ── */}
                 <aside className="sidebar left">
-<<<<<<< Updated upstream
-                    <ResourcePanel gameState={gameState} playerId={activePlayerId} />
-=======
-<<<<<<< Updated upstream
-                    <ResourcePanel gameState={gameState} playerId={session.playerId} />
-=======
                     <ResourcePanel gameState={gameState} playerId={activePlayerId} />
                     <ItemPanel gameState={gameState} playerId={activePlayerId} />
->>>>>>> Stashed changes
->>>>>>> Stashed changes
 
                     {gameState.status === "pending" && isCreator && (
                         <button

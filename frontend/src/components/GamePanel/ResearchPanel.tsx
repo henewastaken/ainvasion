@@ -37,19 +37,11 @@ export default function ResearchPanel({ gameState, playerId, onClose, onResult }
                 itemsUsed: Array.from(selectedItems),
                 resourcesUsed: Array.from(selectedResources),
             });
-<<<<<<< Updated upstream
-            onResult(`Researched: ${res.researchedItem} ${res.researchedItem?.itemEffect}`);
-=======
-<<<<<<< Updated upstream
-            onResult(`Researched: ${res.researchedItem} — ${res.researchedItem?.itemEffect}`);
-=======
             onResult(
                 res.researchedItem
                     ? `Researched ${res.researchedItem.itemName} — ${res.researchedItem.itemEffect}`
                     : res.story || "Research yielded nothing.",
             );
->>>>>>> Stashed changes
->>>>>>> Stashed changes
             onClose();
         } catch (error) {
             const errorMessage = error instanceof Error ? error.message : "Research failed.";
